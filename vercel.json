@@ -1,1 +1,1 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","cleanUrls":false,"trailingSlash":false}
+{"$schema":"https://openapi.vercel.sh/vercel.json","cleanUrls":false,"trailingSlash":false,"rewrites":[{"source":"/vendor/three.module.js","destination":"/three.module.js"},{"source":"/video/:f","destination":"/:f"}]}
