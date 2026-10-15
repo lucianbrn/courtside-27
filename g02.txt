@@ -1,0 +1,2062 @@
+- GAME FLOW ---------- */
+C.onGameStart = function (homeName, awayName) {
+  say(fmt('Welcome to the NBA Finals on Courtside 27! {H} hosting {A} — and this building is ELECTRIC tonight.', { H: homeName, A: awayName }), 'pbp', { big: true });
+  say('Forget the regular season. Sixteen wins is all that matters now. Every possession is going to feel like Game 7.', 'color');
+  say('Two teams, one trophy. Let\'s play.', 'pbp');
+};
+
+C.onQuarterStart = function (q, homeAbbr, awayAbbr) {
+  const lines = {
+    2: ['Back for the second quarter — both coaches making their first real adjustments now.', 'Second quarter underway. Watch the rotations — this is where benches win or lose Finals games.'],
+    3: ['Third quarter — the championship quarter. This is where Finals are so often decided.', 'Out of the locker room we go. Somebody\'s going to come out with more force here.'],
+    4: ['Fourth quarter. Fifteen wins down, one to go for somebody tonight.', 'Here we go — the fourth. Stars take over now. No more hiding.']
+  };
+  const arr = lines[q];
+  if (arr) say(pick(arr), 'pbp');
+};
+
+C.onGameEnd = function (winnerName, loserName, scoreW, scoreL) {
+  say(fmt('{W} wins it, {S} to {L}! And the celebration is on!', { W: winnerName, S: scoreW, L: scoreL }), 'pbp', { big: true });
+  say('What a series. What a Finals. You dream about nights like this as a kid.', 'color');
+  say(fmt('Final score: {W} {S}, {N} {L}.', { W: winnerName, S: scoreW, N: loserName, L: scoreL }), 'pbp');
+};
+
+/* ---------- MADE SHOTS ---------- */
+const MADE3 = [
+  '{n} pulls up from DEEP... BANG! From downtown!',
+  '{n} for three... BANG! Nothing but net!',
+  '{n} launches the triple... BANG! He is FEELING it!',
+  'Step-back three by {n}... BANG! What a shot!',
+  '{n} catches, fires... BANG! From way beyond the arc!',
+  '{n} with the heat check... BANG! Oh my goodness!',
+  'Corner three, {n}... BANG! Textbook!',
+  '{n} off the screen, lets it fly... BANG! Count it!'
+];
+C.onThreeMade = function (n, abbr, teamName, ctx) {
+  ctx = ctx || {};
+  const t = recordShot(abbr, teamName, true, true);
+  recordScore(abbr, 3);
+  const big = ctx.clutch || ctx.atBuzzer;
+  if (ctx.atBuzzer && ctx.made !== false) return C.onBuzzerBeater(n, 3, true, ctx);
+  if (t.run >= 8) { say(fmt('{n} for three... BANG! And that\'s {r} straight points!', { n, r: t.run }), 'pbp', { big: true }); return; }
+  exchange(fmt(pick(MADE3), { n }), null, big);
+  if (t.t3A >= 6 && threePct(t) >= 45 && Math.random() < .4)
+    say(fmt('They are {m}-for-{a} from three now. This is a barrage.', { m: t.t3M, a: t.t3A }), 'color');
+};
+
+const MADE2 = [
+  '{n} pulls up from the elbow... got it!',
+  '{n} with the mid-range jumper... good!',
+  '{n} rises up... knocks it down!',
+  'Floater in the lane by {n}... falls!',
+  '{n} off the glass... and in!',
+  '{n} with a pretty turnaround... yes!',
+  '{n} from 17 feet... pure!'
+];
+C.onTwoMade = function (n, abbr, teamName, ctx) {
+  ctx = ctx || {};
+  recordShot(abbr, teamName, true, false);
+  recordScore(abbr, 2);
+  if (ctx.atBuzzer) return C.onBuzzerBeater(n, 2, true, ctx);
+  exchange(fmt(pick(MADE2), { n }), null, !!ctx.clutch);
+};
+
+const DUNKS = [
+  '{n} throws it DOWN! Oh! A poster!',
+  '{n} with the HAMMER! My goodness!',
+  '{n} rises and PUNISHES the rim!',
+  'Alley-oop... {n} FINISHES with authority! BANG!',
+  '{n} clears the lane and DETONATES on the rim!',
+  '{n} with a vicious one-handed jam!',
+  'Look out below! {n} with the throwdown!'
+];
+C.onDunk = function (n, abbr, teamName, ctx) {
+  ctx = ctx || {};
+  recordShot(abbr, teamName, true, false);
+  recordScore(abbr, 2);
+  say(fmt(pick(DUNKS), { n }), 'pbp', { big: true });
+  say(pick([
+    'You cannot give up the middle of the floor like that in the Finals.',
+    'That\'s a momentum shifter. The whole bench is on its feet.',
+    'Somebody has to meet him at the rim. Somebody.',
+    'That\'s why you build a wall. No wall, no chance.'
+  ]), 'color');
+};
+
+const LAYUPS = [
+  '{n} drives and lays it in!',
+  '{n} with the finger roll... good!',
+  '{n} scoops it up and in!',
+  '{n} gets to the cup... lays it home!',
+  '{n} with the reverse... beautiful!'
+];
+C.onLayup = function (n, abbr, teamName, ctx) {
+  ctx = ctx || {};
+  recordShot(abbr, teamName, true, false);
+  recordScore(abbr, 2);
+  exchange(fmt(pick(LAYUPS), { n }), null, false);
+  if (ctx.andOne) C.onAndOne(n, ctx);
+};
+
+C.onAndOne = function (n, ctx) {
+  say(fmt('And the foul! {n} with a chance at three the hard way!', { n }), 'pbp', { big: true });
+  say('That\'s playing through contact. Old-school finish.', 'color');
+};
+
+/* ---------- MISSES ---------- */
+const MISSES = [
+  '{n} for three... no good.',
+  '{n} pulls up... off the rim.',
+  '{n} with the jumper... won\'t go.',
+  '{n} can\'t buy one right now.',
+  'Jumper by {n}... rattles out.',
+  '{n} from deep... short.',
+  '{n} misfires.'
+];
+C.onMiss = function (n, abbr, teamName, isThree, ctx) {
+  ctx = ctx || {};
+  const t = recordShot(abbr, teamName, false, !!isThree);
+  say(fmt(pick(MISSES), { n }), 'pbp');
+  // Cold streak color
+  const misses = lastN(t, 5).filter(x => !x).length;
+  if (misses >= 4 && Math.random() < .5) {
+    say(fmt('{T} have missed {k} of their last 5 shots. They\'re ice cold.', { T: t.name, k: misses }), 'color');
+  } else if (isThree && coldFromThree(t) && Math.random() < .45) {
+    say(fmt('They\'re {m}-for-{a} from three. At some point you have to drive the ball.', { m: t.t3M, a: t.t3A }), 'color');
+  }
+};
+
+/* ---------- BLOCKS ---------- */
+const BLOCKS = [
+  'REJECTED! {b} sends it back!',
+  '{b} with the SWAT! Get that out of here!',
+  'Oh! {b} erases the shot!',
+  '{b} meets him at the summit... BLOCKED!',
+  'Not in here! {b} with a monster block!',
+  '{b} says NO! What a rejection!'
+];
+C.onBlock = function (blocker, shooter, ctx) {
+  say(fmt(pick(BLOCKS), { b: blocker }), 'pbp', { big: true });
+  say(pick([
+    'That\'s verticality. Straight up, straight down — textbook rim protection.',
+    'Shooters have to feel him now. That changes the geometry of the whole offense.',
+    'You love to see a big man run the floor AND protect the paint.'
+  ]), 'color');
+};
+
+/* ---------- STEALS ---------- */
+const STEALS = [
+  'Stolen by {s}! He\'s got numbers!',
+  '{s} picks the pocket! Turnover!',
+  '{s} jumps the passing lane... STEAL!',
+  'Picked off! {s} with the theft!',
+  '{s} rips it away! What anticipation!',
+  '{s} with the strip! He read it all the way!'
+];
+C.onSteal = function (stealer, victim, ctx) {
+  say(fmt(pick(STEALS), { s: stealer }), 'pbp', { big: !!(ctx && ctx.fastBreak) });
+  if (Math.random() < .4) say(pick([
+    'That\'s film study. He knew the play before the passer did.',
+    'Live-ball turnovers — the most painful kind. Instant offense the other way.'
+  ]), 'color');
+};
+
+/* ---------- TURNOVERS ---------- */
+const TURNOVERS = [
+  'Turnover... {n} throws it away.',
+  '{n} loses the handle! Turnover.',
+  'Offensive foul... that\'s a turnover on {n}.',
+  '{n} steps out of bounds. They\'ll turn it over.',
+  'Shot clock violation! {n} held it too long.',
+  '{n} travels! Turnover.',
+  'Bad pass by {n}... straight out of bounds.'
+];
+C.onTurnover = function (n, kind, ctx) {
+  say(fmt(pick(TURNOVERS), { n }), 'pbp');
+  if (Math.random() < .35) say(pick([
+    'You cannot waste possessions in the Finals. Every one is precious.',
+    'That\'s carelessness. The coach is going to have something to say about that.',
+    'The defense forced that. Active hands, good rotation.'
+  ]), 'color');
+};
+
+/* ---------- FOULS ---------- */
+const FOULS = [
+  'Foul on {f}... that\'ll send {v} to the line.',
+  '{f} with the reach-in. That\'s a foul.',
+  'Whistle... {f} called for the foul on {v}.',
+  '{f} bumps {v}... foul.',
+  'They got {f} for the hold on {v}.',
+  '{f} body-checks {v}. That\'s a foul.'
+];
+C.onFoul = function (fouler, victim, shooting, ctx) {
+  say(fmt(pick(FOULS), { f: fouler, v: victim }), 'pbp');
+  if (shooting && Math.random() < .4) say('Shooting foul — two shots coming.', 'color');
+  else if (Math.random() < .3) say(pick([
+    'That\'s a frustration foul. He got beat and reached.',
+    'Good foul, honestly. Don\'t give up the easy two.'
+  ]), 'color');
+};
+
+const FTM = [
+  '{n} hits the first.',
+  '{n} knocks it down.',
+  'Free throw good by {n}.',
+  '{n} converts.',
+  '{n} is automatic from the stripe.'
+];
+const FTMISS = [
+  '{n} misses the free throw.',
+  'No good on the free throw by {n}.',
+  '{n} clanks it off the rim.',
+  'Front-rim... no good for {n}.',
+  '{n} can\'t cash in from the stripe.'
+];
+C.onFreeThrow = function (n, made, num, of) {
+  say(fmt(pick(made ? FTM : FTMISS), { n }), 'pbp');
+};
+
+/* ---------- TIMEOUTS (coach-specific) ---------- */
+const TIMEOUTS = [
+  'Timeout called! The coach has seen enough.',
+  'And the coach wants a timeout to settle things down.',
+  'Timeout on the floor. Smart — stop the bleeding.',
+  'The coach calls time. He\'s not happy with the defensive rotations.',
+  'Timeout! Let\'s see what the coach draws up out of this.',
+  'Full timeout. The coach is drawing up something special.',
+  'Timeout taken. Both teams head to the benches.'
+];
+C.onTimeout = function (teamName, reason) {
+  say(fmt(pick(TIMEOUTS), {}), 'pbp');
+  const r = reason || 'run';
+  if (r === 'run') say(pick([
+    'Great timeout. The run was getting to double digits — you have to kill momentum there.',
+    'That\'s good coaching. Don\'t let it get away from you in a Finals game.',
+    'He\'s buying rest for his stars without burning a challenge. Veteran move.'
+  ]), 'color');
+  else if (r === 'late') say('Late-game timeout — this is where coaches earn their money. One play, drawn up clean.', 'color');
+  else say('Timeout to set the defense. Communication has been slipping.', 'color');
+};
+
+C.onCoachChallenge = function (teamName, upheld) {
+  say('The coach is challenging the call!', 'pbp', { big: true });
+  say(upheld ? 'Challenge upheld! Tremendous use of the challenge there.' : 'Challenge fails — and that costs them a timeout. Risky.', 'color');
+};
+
+/* ---------- SUBSTITUTIONS ---------- */
+C.onSub = function (playerIn, playerOut, teamName) {
+  say(fmt('{i} checks in for {o}.', { i: playerIn, o: playerOut }), 'pbp');
+  if (Math.random() < .4) say(pick([
+    'Fresh legs. The coach is managing minutes with an eye on the fourth quarter.',
+    'Interesting substitution — going small here to switch everything.',
+    'That\'s the coach trusting his bench in a Finals game. Not easy to do.'
+  ]), 'color');
+};
+
+/* ---------- RUNS & MOMENTUM ---------- */
+C.onRun = function (teamName, runPts, lead) {
+  if (runPts < 8) return;
+  say(fmt('It\'s a {r}-0 run for {T}!', { r: runPts, T: teamName }), 'pbp', { big: true });
+  say(pick([
+    'The building is shaking. This is what a Finals run feels like.',
+    'Somebody call timeout! You cannot let this snowball.',
+    'It\'s all energy right now — defense turning into offense.'
+  ]), 'color');
+};
+
+/* ---------- BUZZER BEATERS ---------- */
+C.onBuzzerBeater = function (n, pts, made, ctx) {
+  if (made) {
+    say(fmt('{n} at the horn... BANG! BANG! HE GOT IT! UNBELIEVABLE!', { n }), 'pbp', { big: true, priority: true });
+    say('I have never seen anything like it! Pandemonium in here!', 'color');
+  } else {
+    say(fmt('{n} for the win... off the rim! No good!', { n }), 'pbp', { big: true, priority: true });
+    say('So close. The whole arena held its breath.', 'color');
+  }
+};
+
+/* ---------- CLUTCH CALLS ---------- */
+C.onClutchShot = function (n, pts, made, secsLeft) {
+  if (made) {
+    say(fmt('{n}... GOT IT! What a huge shot with {s} seconds left!', { n, s: Math.ceil(secsLeft) }), 'pbp', { big: true, priority: true });
+    say('That\'s what the great ones do. Moment\'s never too big.', 'color');
+  } else {
+    say(fmt('{n} for the lead... no!', { n }), 'pbp', { big: true });
+  }
+};
+
+/* ---------- LEAD CHANGES / TIES ---------- */
+C.onLeadChange = function (newLeader, scoreU, scoreC) {
+  say(fmt('Lead change! {T} goes in front, {u}-{c}.', { T: newLeader, u: scoreU, c: scoreC }), 'pbp');
+};
+C.onTieGame = function (score) {
+  say(fmt('We\'re tied at {s}! What a Finals game!', { s: score }), 'pbp');
+};
+
+/* ---------- QUARTER/HALF NOTES ---------- */
+C.onHalftime = function (leaderName, scoreU, scoreC) {
+  say(fmt('Halftime: {L} leads {u}-{c}.', { L: leaderName, u: scoreU, c: scoreC }), 'pbp');
+  say('Adjustments win championships. Let\'s see who comes out sharper.', 'color');
+};
+
+/* ---------- MISC FLAVOR (sprinkle sparingly) ---------- */
+const FLAVOR = [
+  'The intensity in this building is off the charts.',
+  'You can feel the tension on every single possession.',
+  'This is Finals basketball at its absolute finest.',
+  'Both teams leaving everything on the floor tonight.'
+];
+C.onFlavor = function () { if (Math.random() < .5) say(pick(FLAVOR), 'color'); };
+
+/* ---------------- Public API ---------------- */
+window.Commentary = {
+  say, exchange, team,
+  onGameStart: C.onGameStart, onQuarterStart: C.onQuarterStart,
+  onHalftime: C.onHalftime, onGameEnd: C.onGameEnd,
+  onThreeMade: C.onThreeMade, onTwoMade: C.onTwoMade,
+  onDunk: C.onDunk, onLayup: C.onLayup, onAndOne: C.onAndOne,
+  onMiss: C.onMiss, onBlock: C.onBlock, onSteal: C.onSteal,
+  onTurnover: C.onTurnover, onFoul: C.onFoul, onFreeThrow: C.onFreeThrow,
+  onTimeout: C.onTimeout, onCoachChallenge: C.onCoachChallenge, onSub: C.onSub,
+  onRun: C.onRun, onBuzzerBeater: C.onBuzzerBeater, onClutchShot: C.onClutchShot,
+  onLeadChange: C.onLeadChange, onTieGame: C.onTieGame, onFlavor: C.onFlavor,
+  _queue: queue // for debugging
+};
+
+})();
+
+
+
+/* ===== INLINED: momentum-system.js ===== */
+/* ============================================================
+   COURTSIDE 27 — MOMENTUM & GAME FLOW SYSTEM
+   Makes coaching feel impactful: momentum swings, runs, crowd
+   energy, clutch time, SimCast-style sim controls, comeback logic.
+
+   INTEGRATION (in index.html):
+   1. Paste this entire file into a <script> tag AFTER the main
+      game script, or load via <script src="specs/momentum-system.js">.
+   2. Hook scoring — in updateGame(), inside `if(made){...}` after
+      the score is updated, add:
+          Momentum.onScore(team, pts, resolvedShot.kind);
+      (team is 'user' or 'cpu', pts is 2 or 3, kind e.g. 'DUNK')
+   3. Hook timeouts — at the END of coachCallTimeout(), add:
+          Momentum.onTimeout();
+   4. Hook big defensive plays — in blockAttempt() success branch
+      and attemptSteal() success branch, add:
+          Momentum.onBigPlay('user', 'BLOCK'); // or 'STEAL'
+      CPU blocks/steals: Momentum.onBigPlay('cpu', 'BLOCK');
+   5. In the main frame loop (or updateGame), call every frame:
+          Momentum.update(dt);
+      where dt is seconds since last frame.
+   6. For sim speed — wrap the updateGame call:
+          // instead of: updateGame(dt)
+          Momentum.tickSim(dt);
+      tickSim handles 1x/2x/4x and sim-to-stoppage internally.
+   7. Shooting hook — where `chance` is computed for user shots,
+      multiply by: Momentum.getShootingMult('user')
+      and for CPU shots: Momentum.getShootingMult('cpu')
+   8. Crowd audio — where crowdGain is set, multiply by:
+          Momentum.getCrowdVolumeMult()
+   9. Crowd visuals — in the crowd animation loop, use:
+          Momentum.crowdEnergy (0-100) to scale bounce amplitude.
+
+   All DOM is created by this module. No changes to existing
+   HTML required.
+   ============================================================ */
+(function () {
+'use strict';
+
+/* ---------------- STATE ---------------- */
+const M = {
+  value: 0,              // -100 (CPU) .. +100 (user). 0 = neutral.
+  scoreLog: [],          // [{team:'user'|'cpu', pts, t: gameSeconds}]
+  runAlerted: '',        // key of last run we showed a graphic for
+  runActive: null,       // {team, points, key} while a run is live
+  crowdEnergy: 50,       // 0-100. 50 neutral. Home crowd favors user.
+  clutchOn: false,
+  simSpeed: 1,           // 1, 2, 4
+  simTarget: null,       // null | 'quarter' | 'stoppage'
+  winProb: 50,           // user's win probability 1..99
+  largestDeficit: 0,     // user's largest deficit this game
+  largestLead: 0,
+  comebackAlerted: false,
+  lastScore: { user: 0, cpu: 0 },
+  quarter: 1,
+  els: {},               // cached DOM refs
+  toastTimer: 0,
+};
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* Safe accessors for game globals (may not exist in all modes) */
+function G(name, fb) {
+  try { const v = eval(name); return v === undefined ? fb : v; }
+  catch (e) { return fb; }
+}
+function callGame(fn, ...args) {
+  try { const f = eval(fn); if (typeof f === 'function') return f(...args); }
+  catch (e) {}
+  return undefined;
+}
+
+/* ---------------- CSS + DOM ---------------- */
+function injectCSS() {
+  if (document.getElementById('momentum-css')) return;
+  const s = document.createElement('style');
+  s.id = 'momentum-css';
+  s.textContent = `
+  #momentumWrap{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:4;width:min(420px,72vw);pointer-events:none;font-family:inherit}
+  #momentumBar{position:relative;height:14px;background:#0a0e14dd;border:1px solid #3a4656;border-radius:8px;overflow:hidden;box-shadow:0 4px 18px #000a}
+  #momentumFillUser{position:absolute;left:50%;top:0;bottom:0;width:0;background:linear-gradient(90deg,#1d7a4c,#d8ff48);transition:width .5s}
+  #momentumFillCpu{position:absolute;right:50%;top:0;bottom:0;width:0;background:linear-gradient(270deg,#8c1f3f,#ff5a5a);transition:width .5s}
+  #momentumMid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:#fff8;transform:translateX(-50%)}
+  #momentumLabel{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.2em;color:#aeb9c4;margin-top:3px;text-shadow:0 1px 6px #000}
+  #momentumLabel .hot{color:#d8ff48;font-weight:900}
+  #runGraphic{position:fixed;top:32%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:14;text-align:center;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none}
+  #runGraphic.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #runGraphic .rg-top{font-size:13px;letter-spacing:.5em;color:#f3b544;font-weight:900;text-shadow:0 2px 18px #000}
+  #runGraphic .rg-main{font-size:clamp(46px,8vw,96px);font-weight:1000;color:#fff;letter-spacing:.02em;text-shadow:0 4px 40px #000;line-height:1}
+  #runGraphic .rg-sub{font-size:14px;letter-spacing:.3em;color:#d8ff48;margin-top:6px;text-shadow:0 2px 12px #000}
+  #clutchBanner{position:fixed;top:110px;left:50%;transform:translateX(-50%);z-index:4;background:linear-gradient(90deg,#7a1020,#c22030,#7a1020);border:1px solid #ff8a8a;color:#fff;font-weight:1000;font-size:13px;letter-spacing:.4em;padding:8px 26px;border-radius:3px;opacity:0;transition:opacity .5s;pointer-events:none;text-shadow:0 2px 10px #000;box-shadow:0 6px 30px #c2203055}
+  #clutchBanner.show{opacity:1;animation:clutchPulse 1.6s infinite}
+  @keyframes clutchPulse{0%,100%{box-shadow:0 6px 30px #c2203055}50%{box-shadow:0 6px 46px #ff3030aa}}
+  #simPanel{position:fixed;right:14px;bottom:14px;z-index:6;display:flex;gap:6px;align-items:center;background:#0a0e14ee;border:1px solid #3a4656;border-radius:6px;padding:8px 10px;box-shadow:0 8px 28px #000c}
+  #simPanel .sp-label{font-size:9px;letter-spacing:.2em;color:#8a9aab;margin-right:2px}
+  #simPanel button{background:#141a24;border:1px solid #3a4656;color:#dfe6ec;font-size:11px;font-weight:800;letter-spacing:.08em;padding:7px 10px;border-radius:4px;cursor:pointer;transition:all .15s}
+  #simPanel button:hover{border-color:#d8ff48;color:#d8ff48}
+  #simPanel button.active{background:#d8ff48;border-color:#d8ff48;color:#06100e}
+  #simPanel button.warn:hover{border-color:#ff5a5a;color:#ff5a5a}
+  #wpWrap{position:fixed;left:14px;bottom:14px;z-index:6;background:#0a0e14ee;border:1px solid #3a4656;border-radius:6px;padding:10px 14px;min-width:170px;box-shadow:0 8px 28px #000c}
+  #wpWrap .wp-title{font-size:9px;letter-spacing:.24em;color:#8a9aab;margin-bottom:6px}
+  #wpBar{height:10px;background:#1a2230;border-radius:5px;overflow:hidden;position:relative}
+  #wpFill{height:100%;background:linear-gradient(90deg,#1d7a4c,#d8ff48);width:50%;transition:width .8s}
+  #wpText{font-size:12px;font-weight:900;color:#fff;margin-top:5px;letter-spacing:.06em}
+  #wpText small{color:#8a9aab;font-weight:400}
+  #crowdMeter{position:fixed;left:14px;top:64px;z-index:4;background:#0a0e14cc;border:1px solid #3a4656;border-radius:6px;padding:8px 12px;pointer-events:none}
+  #crowdMeter .cm-title{font-size:9px;letter-spacing:.24em;color:#8a9aab;margin-bottom:5px}
+  #crowdBars{display:flex;gap:3px;align-items:flex-end;height:26px}
+  #crowdBars div{width:7px;background:#2a3542;border-radius:2px;transition:height .4s,background .4s}
+  @media(max-width:700px){#momentumWrap{top:54px;width:60vw}#wpWrap{display:none}#crowdMeter{display:none}}
+  `;
+  document.head.appendChild(s);
+}
+
+function buildDOM() {
+  injectCSS();
+  // Momentum meter
+  const mw = document.createElement('div');
+  mw.id = 'momentumWrap';
+  mw.innerHTML = `
+    <div id="momentumBar"><div id="momentumFillUser"></div><div id="momentumFillCpu"></div><div id="momentumMid"></div></div>
+    <div id="momentumLabel"><span id="momUser">YOU</span><span>MOMENTUM</span><span id="momCpu">CPU</span></div>`;
+  document.body.appendChild(mw);
+  // Run graphic
+  const rg = document.createElement('div');
+  rg.id = 'runGraphic';
+  rg.innerHTML = `<div class="rg-top">SCORING RUN</div><div class="rg-main"></div><div class="rg-sub"></div>`;
+  document.body.appendChild(rg);
+  // Clutch banner
+  const cb = document.createElement('div');
+  cb.id = 'clutchBanner';
+  cb.textContent = '★ CLUTCH TIME ★';
+  document.body.appendChild(cb);
+  // Sim panel
+  const sp = document.createElement('div');
+  sp.id = 'simPanel';
+  sp.innerHTML = `
+    <span class="sp-label">SIM</span>
+    <button data-sim="1" class="active">1×</button>
+    <button data-sim="2">2×</button>
+    <button data-sim="4">4×</button>
+    <button data-sim="stop" class="warn" title="Sim to next whistle">⏭ WHISTLE</button>
+    <button data-sim="quarter" class="warn" title="Sim to end of quarter">⏭ QTR</button>`;
+  document.body.appendChild(sp);
+  sp.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    const v = b.dataset.sim;
+    if (v === 'stop') M.simTarget = 'stoppage';
+    else if (v === 'quarter') M.simTarget = 'quarter';
+    else { M.simSpeed = parseInt(v, 10); M.simTarget = null; }
+    sp.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    if (v === '1' || v === '2' || v === '4') b.classList.add('active');
+    callGame('sfx', 'pass');
+  }));
+  // Win probability
+  const wp = document.createElement('div');
+  wp.id = 'wpWrap';
+  wp.innerHTML = `<div class="wp-title">WIN PROBABILITY</div><div id="wpBar"><div id="wpFill"></div></div><div id="wpText">50% <small>YOU</small></div>`;
+  document.body.appendChild(wp);
+  // Crowd meter
+  const cm = document.createElement('div');
+  cm.id = 'crowdMeter';
+  let bars = '';
+  for (let i = 0; i < 12; i++) bars += '<div style="height:6px"></div>';
+  cm.innerHTML = `<div class="cm-title">CROWD ENERGY</div><div id="crowdBars">${bars}</div>`;
+  document.body.appendChild(cm);
+
+  M.els = {
+    fillUser: document.getElementById('momentumFillUser'),
+    fillCpu: document.getElementById('momentumFillCpu'),
+    momUser: document.getElementById('momUser'),
+    momCpu: document.getElementById('momCpu'),
+    runGraphic: document.getElementById('runGraphic'),
+    clutch: document.getElementById('clutchBanner'),
+    wpFill: document.getElementById('wpFill'),
+    wpText: document.getElementById('wpText'),
+    crowdBars: document.querySelectorAll('#crowdBars div'),
+  };
+}
+
+/* ---------------- MOMENTUM CORE ---------------- */
+
+/** Called on every made basket. team: 'user'|'cpu', pts: 2|3, kind: 'DUNK'|'LAYUP'|'JUMPER' etc. */
+function onScore(team, pts, kind) {
+  const dir = team === 'user' ? 1 : -1;
+  let shift = pts * 2.2;                       // 2pt = 4.4, 3pt = 6.6
+  if (kind === 'DUNK') shift += 4;             // dunks electrify
+  if (pts === 3) shift += 2;                   // threes swing momentum
+  // Diminishing returns if already heavily favored
+  if (Math.sign(M.value) === dir) shift *= Math.max(.35, 1 - Math.abs(M.value) / 140);
+  M.value = clamp(M.value + dir * shift, -100, 100);
+
+  // Log for run detection (use game clock)
+  const t = G('gameSeconds', 0);
+  M.scoreLog.push({ team, pts, t });
+  if (M.scoreLog.length > 40) M.scoreLog.shift();
+
+  // Crowd: home crowd erupts for user scores, deflates for CPU scores
+  bumpCrowd(dir * (4 + pts * 1.5));
+
+  detectRun();
+  updateWinProb();
+  renderMeter();
+}
+
+/** Called on blocks, steals, charges drawn. team: who made the play. */
+function onBigPlay(team, playType) {
+  const dir = team === 'user' ? 1 : -1;
+  const amount = playType === 'BLOCK' ? 5 : playType === 'STEAL' ? 4 : 3;
+  M.value = clamp(M.value + dir * amount, -100, 100);
+  bumpCrowd(dir * 5);
+  const label = { BLOCK: 'REJECTED!', STEAL: 'PICKED CLEAN!', CHARGE: 'CHARGE DRAWN!' }[playType] || 'BIG PLAY!';
+  const who = team === 'user' ? 'YOUR DEFENSE' : 'CPU DEFENSE';
+  callGame('showToast', label, `${who} swings the momentum.`, 900);
+  renderMeter();
+}
+
+/** Called at the end of coachCallTimeout(). */
+function onTimeout() {
+  // If the opponent is on a run, timeout has a 65% chance to kill it
+  if (M.runActive && M.runActive.team === 'cpu') {
+    if (Math.random() < 0.65) {
+      const killed = M.runActive.points;
+      M.value = clamp(M.value * 0.35, -100, 100);  // bleed off CPU momentum
+      M.runActive = null;
+      M.runAlerted = '';
+      M.scoreLog.length = 0;
+      bumpCrowd(12);  // crowd settles, coach's message lands
+      callGame('showToast', 'BLEEDING STOPPED', `Timeout kills the ${killed}-0 run. Regroup.`, 1400);
+      callGame('coachSetReport', 'Run stopped', 'The timeout broke their rhythm. Reset the offense.');
+    } else {
+      callGame('showToast', 'RUN CONTINUES', 'The timeout didn\'t cool them off. Dig deeper.', 1400);
+      callGame('coachSetReport', 'Still their run', 'Timeout didn\'t break it. Consider a substitution or defensive change.');
+    }
+  } else if (M.runActive && M.runActive.team === 'user') {
+    // Calling timeout on your OWN run is usually a mistake — small penalty
+    M.value = clamp(M.value * 0.85, -100, 100);
+    callGame('coachSetReport', 'Timeout on your run', 'Careful — you may have cooled off your own hot hand.');
+  } else {
+    // Neutral timeout: slight reset toward center, crowd catches breath
+    M.value *= 0.7;
+    bumpCrowd(-6);
+  }
+  renderMeter();
+}
+
+/* ---------------- RUN DETECTION ---------------- */
+function detectRun() {
+  // Walk back through the log: count consecutive unanswered points.
+  // A run is live when one team has 8+ unanswered, whether the run
+  // has ended (opponent finally scored) or is still going.
+  let team = null, points = 0;
+  for (let i = M.scoreLog.length - 1; i >= 0; i--) {
+    const s = M.scoreLog[i];
+    if (team === null) { team = s.team; points = s.pts; }
+    else if (s.team === team) { points += s.pts; }
+    else break; // opponent answered — run boundary found
+  }
+  if (team === null || points < 8) { M.runActive = null; return; }
+
+  const key = `${team}-${points}`;
+  M.runActive = { team, points, key };
+  if (M.runAlerted === key) return;  // already showed this run
+  M.runAlerted = key;
+
+  const who = team === 'user' ? 'YOUR TEAM' : 'CPU';
+  const score = `${G('scoreUser', 0)}–${G('scoreCPU', 0)}`;
+  showRunGraphic(points, who);
+
+  if (team === 'cpu') {
+    // Suggest timeout — this is the coaching moment
+    callGame('showToast', `${points}-0 CPU RUN`, 'Consider calling a timeout to stop the bleeding.', 1800);
+    callGame('coachSetReport', 'Opponent run!', `${points}-0 run against you. TIMEOUT is available — use it to break their rhythm.`);
+    callGame('setState', 'OPPONENT RUN', `${points} unanswered. The building is quiet. Call timeout?`);
+  } else {
+    callGame('showToast', `${points}-0 RUN!`, 'Your team is rolling. The crowd is electric.', 1500);
+    callGame('setState', 'YOUR RUN', `${points} unanswered points. Keep attacking.`);
+  }
+}
+
+function showRunGraphic(points, who) {
+  const rg = M.els.runGraphic;
+  if (!rg) return;
+  rg.querySelector('.rg-main').textContent = `${points}-0`;
+  rg.querySelector('.rg-sub').textContent = `${who} · ${G('scoreUser', 0)}–${G('scoreCPU', 0)}`;
+  rg.classList.add('show');
+  clearTimeout(M.toastTimer);
+  M.toastTimer = setTimeout(() => rg.classList.remove('show'), 2600);
+}
+
+/* ---------------- CROWD ENERGY ---------------- */
+function bumpCrowd(amount) {
+  M.crowdEnergy = clamp(M.crowdEnergy + amount, 0, 100);
+  renderCrowd();
+}
+
+/** Multiplier for crowd audio gain. Call where crowdGain is set. */
+function getCrowdVolumeMult() {
+  return 0.35 + (M.crowdEnergy / 100) * 1.3;  // 0.35x .. 1.65x
+}
+
+function renderCrowd() {
+  const bars = M.els.crowdBars;
+  if (!bars || !bars.length) return;
+  const lit = Math.round((M.crowdEnergy / 100) * bars.length);
+  bars.forEach((b, i) => {
+    const on = i < lit;
+    b.style.height = on ? `${8 + (i / bars.length) * 18}px` : '6px';
+    b.style.background = !on ? '#2a3542'
+      : M.crowdEnergy > 75 ? '#d8ff48'
+      : M.crowdEnergy > 45 ? '#f3b544' : '#7a6a4a';
+  });
+}
+
+/* ---------------- SHOOTING IMPACT ---------------- */
+/** Returns a multiplier for shot chance. Call at each shot computation. */
+function getShootingMult(team) {
+  const m = team === 'user' ? M.value : -M.value;  // positive = this team has momentum
+  let mult = 1 + (m / 100) * 0.06;                  // ±6% max
+  // Clutch tightens everyone up slightly, but hot teams rise
+  if (M.clutchOn) {
+    mult *= 0.97;
+    if (m > 30) mult *= 1.05;   // clutch gene: hot players want the moment
+  }
+  return mult;
+}
+
+/* ---------------- CLUTCH ---------------- */
+function checkClutch() {
+  const secs = G('gameSeconds', 999);
+  const q = G('gameQuarter', 1);
+  const qLen = 180; // default 3-min quarters; clutch = last 2 min of 4th
+  const diff = Math.abs(G('scoreUser', 0) - G('scoreCPU', 0));
+  const was = M.clutchOn;
+  M.clutchOn = (q >= 4 && secs < 120 && diff <= 8 && !G('practice', false) && !G('gameEnded', false));
+  if (M.clutchOn && !was) {
+    M.els.clutch && M.els.clutch.classList.add('show');
+    callGame('showToast', 'CLUTCH TIME', 'Final 2 minutes. Every possession matters.', 1600);
+    bumpCrowd(18);
+  } else if (!M.clutchOn && was) {
+    M.els.clutch && M.els.clutch.classList.remove('show');
+  }
+}
+
+/* ---------------- WIN PROBABILITY & COMEBACK ---------------- */
+function updateWinProb() {
+  const du = G('scoreUser', 0), dc = G('scoreCPU', 0);
+  const diff = du - dc;                       // positive = user leads
+  const secs = G('gameSeconds', 240);
+  const total = 720;                          // 4 x 3-min quarters default
+  const timeLeft = clamp(secs / total, 0, 1); // 1 = whole game left
+
+  // Track extremes for comeback detection
+  if (diff < 0) M.largestDeficit = Math.max(M.largestDeficit, -diff);
+  if (diff > 0) M.largestLead = Math.max(M.largestLead, diff);
+
+  // Simple logistic-ish model: lead matters more late
+  const leverage = 1.6 - timeLeft;            // 0.6 early .. 1.6 late
+  let p = 50 + diff * 3.2 * leverage + (M.value / 100) * 6;
+  M.winProb = clamp(Math.round(p), 1, 99);
+
+  // Comeback alert: was down 15+, now within 5
+  if (!M.comebackAlerted && M.largestDeficit >= 15 && diff >= -5 && diff < 0) {
+    M.comebackAlerted = true;
+    showRunGraphic('COMEBACK', 'FROM DOWN ' + M.largestDeficit);
+    callGame('showToast', 'COMEBACK BID', `Erased a ${M.largestDeficit}-point deficit. One stop at a time.`, 1800);
+    bumpCrowd(25);
+  }
+  // Blowout watch: up 20+ late
+  if (diff >= 20 && timeLeft < 0.25 && !M._blowout) {
+    M._blowout = true;
+    callGame('setState', 'BLOWOUT', 'This one is getting out of hand.');
+  }
+  renderWP();
+}
+
+function renderWP() {
+  if (!M.els.wpFill) return;
+  M.els.wpFill.style.width = M.winProb + '%';
+  M.els.wpFill.style.background = M.winProb >= 50
+    ? 'linear-gradient(90deg,#1d7a4c,#d8ff48)' : 'linear-gradient(90deg,#8c1f3f,#ff5a5a)';
+  M.els.wpText.innerHTML = `${M.winProb}% <small>YOU</small>`;
+}
+
+function renderMeter() {
+  if (!M.els.fillUser) return;
+  const v = M.value; // -100..100
+  M.els.fillUser.style.width = (v > 0 ? v / 2 : 0) + '%';
+  M.els.fillCpu.style.width = (v < 0 ? -v / 2 : 0) + '%';
+  M.els.momUser.classList.toggle('hot', v > 25);
+  M.els.momCpu.classList.toggle('hot', v < -25);
+}
+
+/* ---------------- SIM CONTROLS ---------------- */
+/**
+ * Drop-in replacement for the per-frame updateGame(dt) call.
+ * Handles 1x/2x/4x plus sim-to-whistle and sim-to-quarter.
+ * Stoppages that end a sim: quarter change, game end, or (for
+ * 'stoppage') any pause event (timeout). We detect pause via the
+ * game's `paused` global flipping true.
+ */
+let _simIters = 0;
+function tickSim(dt) {
+  const updateGame = (() => { try { return eval('updateGame'); } catch (e) { return null; } })();
+  if (typeof updateGame !== 'function') return;
+
+  if (M.simTarget) {
+    // Fast-forward in a tight loop with a safety cap
+    const maxIters = 4000;
+    let iters = 0;
+    const startQ = G('gameQuarter', 1);
+    const wasPaused = !!G('paused', false);
+    while (iters++ < maxIters) {
+      if (G('gameEnded', false)) break;
+      if (G('gameQuarter', 1) !== startQ && M.simTarget === 'quarter') break;
+      if (M.simTarget === 'stoppage' && !!G('paused', false) && !wasPaused) break;
+      if (M.simTarget === 'stoppage' && G('gameQuarter', 1) !== startQ) break;
+      updateGame(1 / 30);           // fixed 30fps step for stability
+      Momentum.update(1 / 30);
+      _simIters++;
+    }
+    M.simTarget = null;
+    // reset sim buttons UI
+    document.querySelectorAll('#simPanel button').forEach(x => x.classList.remove('active'));
+    const b1 = document.querySelector('#simPanel button[data-sim="1"]');
+    if (b1) b1.classList.add('active');
+    M.simSpeed = 1;
+    callGame('updateUI');
+    return;
+  }
+
+  const n = M.simSpeed || 1;
+  for (let i = 0; i < n; i++) updateGame(dt);
+}
+
+/* ---------------- PER-FRAME UPDATE ---------------- */
+let _lastQ = 1;
+function update(dt) {
+  // Momentum decay toward neutral
+  if (Math.abs(M.value) > 0.5) {
+    M.value -= Math.sign(M.value) * Math.min(Math.abs(M.value), 2.2 * dt);
+  } else M.value = 0;
+
+  // Crowd drifts toward a baseline set by score + momentum
+  const diff = G('scoreUser', 0) - G('scoreCPU', 0);
+  const baseline = clamp(50 + diff * 1.2 + M.value * 0.25, 8, 100);
+  M.crowdEnergy += (baseline - M.crowdEnergy) * Math.min(1, 0.25 * dt);
+  renderCrowd();
+  renderMeter();
+
+  // Quarter transitions reset short-term run memory slightly
+  const q = G('gameQuarter', 1);
+  if (q !== _lastQ) {
+    _lastQ = q;
+    M.value *= 0.5;
+    M.runActive = null;
+    M.runAlerted = '';
+    M._blowout = false;
+  }
+
+  checkClutch();
+  // Win prob refreshes on scores; also nudge it as clock runs
+  if (Math.random() < dt * 0.5) updateWinProb();
+}
+
+/** Reset for a new game. Call from begin(). */
+function reset() {
+  M.value = 0; M.scoreLog = []; M.runAlerted = ''; M.runActive = null;
+  M.crowdEnergy = 50; M.clutchOn = false; M.simSpeed = 1; M.simTarget = null;
+  M.winProb = 50; M.largestDeficit = 0; M.largestLead = 0;
+  M.comebackAlerted = false; M._blowout = false; _lastQ = 1;
+  M.els.clutch && M.els.clutch.classList.remove('show');
+  renderMeter(); renderCrowd(); renderWP();
+}
+
+/* ---------------- INIT ---------------- */
+function init() {
+  if (document.getElementById('momentumWrap')) return;
+  buildDOM();
+  renderMeter(); renderCrowd(); renderWP();
+  // Auto-reset when a new game begins: wrap begin() if present
+  try {
+    const origBegin = eval('begin');
+    if (typeof origBegin === 'function' && !origBegin._momWrapped) {
+      const wrapped = function (...a) { reset(); return origBegin.apply(this, a); };
+      wrapped._momWrapped = true;
+      eval('begin = wrapped');
+    }
+  } catch (e) {}
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+/* ---------------- PUBLIC API ---------------- */
+window.Momentum = {
+  onScore, onBigPlay, onTimeout,
+  update, tickSim, reset,
+  getShootingMult, getCrowdVolumeMult,
+  get state() {
+    return {
+      value: Math.round(M.value),
+      crowdEnergy: Math.round(M.crowdEnergy),
+      clutch: M.clutchOn,
+      winProb: M.winProb,
+      run: M.runActive,
+      simSpeed: M.simSpeed,
+    };
+  },
+  // Expose internals for debugging / tuning
+  _m: M,
+};
+
+})();
+
+
+
+/* ===== INLINED: play-visuals.js ===== */
+/**
+ * PlayVisuals — Coach's tablet visualizations for Courtside 27
+ * ============================================================
+ * A self-contained module that renders NBA 2K-style play art, shot charts,
+ * matchup lines, hot/cold indicators, a visual play-call menu, and defensive
+ * scheme overlays for the 3D coaching sim.
+ *
+ * INTEGRATION (in the game's main HTML, after THREE and game globals exist):
+ *
+ *   <script src="specs/play-visuals.js"><\/script>
+ *   <script type="module">
+ *     import * as THREE from './three.module.js';
+ *     // ... game setup ...
+ *     PlayVisuals.init({ THREE, scene });
+ *
+ *     // In the game loop (or on a timer):
+ *     PlayVisuals.update(dt);
+ *
+ *     // When a play is called (e.g. inside callPlay()):
+ *     PlayVisuals.showPlayArt(playCall);
+ *
+ *     // When a shot resolves (made/missed known):
+ *     PlayVisuals.recordShot(shot.start.x, shot.start.z, shot.made, shot.team, shot.handler);
+ *
+ *     // Toggleable overlays (bind to coach buttons/keys):
+ *     PlayVisuals.setMatchupsVisible(true);
+ *     PlayVisuals.setShotChartVisible(true);
+ *     PlayVisuals.openPlayMenu((playId) => { playCall = playId; PlayVisuals.showPlayArt(playId); });
+ *   <\/script>
+ *
+ * The module reads live game state from window globals (playerTeam, cpuTeam,
+ * ballTeam, coachDefense select) but every accessor can be overridden via
+ * init() options for testing.
+ */
+
+const PlayVisuals = (() => {
+  'use strict';
+
+  // ------------------------------------------------------------------ config
+  const COURT = { x: 28, z: 15 };          // world units, x: -14..14, z: -7.5..7.5
+  const ART_LIFE = 3.0;                     // seconds the on-court play art stays up
+  const HOT_WINDOW = 5;                     // last N shots considered for hot/cold
+  const HOT_MAKES = 3;                      // makes in window => hot
+  const COLD_MISSES = 3;                    // misses in window => cold
+
+  const COLORS = {
+    offense: 0xd8ff48,   // lime O's
+    defense: 0xff5a5a,   // red X's
+    ball: 0xffb020,
+    arrow: 0xffffff,
+    zone: 0x4da3ff,
+    hot: 0xff7a1a,
+    cold: 0x6ecbff,
+    board: '#0b1118',
+    line: '#2a3542',
+    text: '#e8eef4',
+    dim: '#8a9aab',
+  };
+
+  // ------------------------------------------------------- play definitions
+  // Each play: name, blurb, and per-position movement in court units.
+  // Offense attacks +x (right basket). Spots are [x, z] targets for the
+  // 5 offensive positions [PG, SG, SF, PF, C] plus a ball-movement path.
+  const PLAYS = {
+    'motion': {
+      name: 'MOTION OFFENSE',
+      blurb: 'Read & react · cutters exchange, ball reverses',
+      spots: [[6,0],[9,-4.5],[9,4.5],[4,-5.5],[4,5.5]],
+      cuts: [[[6,0],[2,-3]], [[9,4.5],[5,1.5]], [[4,-5.5],[8,-2]]],
+      ballPath: [[-2,0],[6,0],[9,-4.5]],
+    },
+    'pick-roll': {
+      name: 'PICK & ROLL',
+      blurb: 'Screener sets on ball side · handler turns corner',
+      spots: [[7,1.5],[10,-5],[10,5],[3,-4],[7.5,0.5]],
+      cuts: [[[7.5,0.5],[7,1.8]], [[7,1.5],[11,1.5]], [[7.5,0.5],[5,3.5]]],
+      ballPath: [[4,3],[7,1.5],[11,1.5]],
+      screen: [7.5, 0.8],
+    },
+    'isolation': {
+      name: 'STAR ISOLATION',
+      blurb: 'Clear a side · star goes to work',
+      spots: [[8,3.5],[-2,-5.5],[-4,5.5],[-1,-3],[2,4]],
+      cuts: [[[8,3.5],[11,2.5]]],
+      ballPath: [[5,0],[8,3.5]],
+    },
+    'perimeter': {
+      name: 'PERIMETER ATTACK',
+      blurb: 'Five-out spacing · drive & kick threes',
+      spots: [[6,0],[10.5,-5],[10.5,5],[7,-6],[7,6]],
+      cuts: [[[6,0],[10,0]], [[10.5,-5],[8,-3]]],
+      ballPath: [[-2,0],[6,0],[10.5,-5]],
+    },
+  };
+
+  // ------------------------------------------------------------- state
+  let T = null;                 // THREE namespace (injected)
+  let scene = null;
+  let opts = {};
+  let artGroup = null;          // on-court play art
+  let artTimer = 0;
+  let matchupGroup = null;
+  let matchupsOn = false;
+  let zoneGroup = null;
+  let hotGroup = null;
+  let lastPlayShown = null;
+
+  const shots = [];             // {x, z, made, team, handler}
+  const playerShots = { user: [[],[],[],[],[]], cpu: [[],[],[],[],[]] };
+
+  // 2D UI
+  let uiRoot = null, shotCanvas = null, shotCtx = null;
+  let menuEl = null, menuCanvas = null;
+  let shotChartOn = false;
+
+  // ------------------------------------------------------- helpers
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function getState() {
+    const g = (typeof window !== 'undefined') ? window : {};
+    return {
+      playerTeam: opts.playerTeam || g.playerTeam || [],
+      cpuTeam: opts.cpuTeam || g.cpuTeam || [],
+      ballTeam: opts.ballTeam !== undefined ? opts.ballTeam : (g.ballTeam || 'user'),
+      playCall: opts.playCall || g.playCall || 'motion',
+      defense: (typeof document !== 'undefined' && $('coachDefense'))
+        ? $('coachDefense').value : (opts.defense || 'man'),
+    };
+  }
+
+  // world (x,z) -> mini-court canvas px. Canvas draws attacking right.
+  function courtToMini(x, z, w, h, pad) {
+    return [
+      pad + ((x + COURT.x / 2) / COURT.x) * (w - pad * 2),
+      pad + ((z + COURT.z / 2) / COURT.z) * (h - pad * 2),
+    ];
+  }
+
+  function drawMiniCourt(ctx, w, h, pad) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(232,238,244,.55)';
+    ctx.lineWidth = 1.5;
+    // outer
+    ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+    // half court
+    ctx.beginPath();
+    ctx.moveTo(w / 2, pad); ctx.lineTo(w / 2, h - pad); ctx.stroke();
+    // center circle
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, (h - pad * 2) * 0.12, 0, Math.PI * 2); ctx.stroke();
+    // paint + arc each end (right basket = user attack)
+    for (const side of [1, -1]) {
+      const bx = side === 1 ? w - pad : pad;
+      const dir = side === 1 ? -1 : 1;
+      const pw = (w - pad * 2) * 0.19, ph = (h - pad * 2) * 0.32;
+      ctx.strokeRect(Math.min(bx, bx + dir * pw), h / 2 - ph / 2, pw, ph);
+      ctx.beginPath();
+      ctx.arc(bx, h / 2, (h - pad * 2) * 0.24, side === 1 ? Math.PI * 0.5 : -Math.PI * 0.5, side === 1 ? Math.PI * 1.5 : Math.PI * 0.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function makeTextSprite(text, { size = 64, color = '#ffffff', bg = null } = {}) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    if (bg) { g.fillStyle = bg; g.beginPath(); g.arc(64, 64, 60, 0, Math.PI * 2); g.fill(); }
+    g.font = `900 ${size}px Arial`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = color;
+    g.fillText(text, 64, 68);
+    const tex = new T.CanvasTexture(c);
+    tex.colorSpace = T.SRGBColorSpace;
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    sp.scale.set(0.9, 0.9, 1);
+    return sp;
+  }
+
+  function makeFlameSprite() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(64, 84, 8, 64, 64, 60);
+    grad.addColorStop(0, '#fff3b0'); grad.addColorStop(0.35, '#ffb020');
+    grad.addColorStop(0.7, '#ff5a1a'); grad.addColorStop(1, 'rgba(255,60,10,0)');
+    g.fillStyle = grad;
+    g.beginPath();
+    g.moveTo(64, 8);
+    g.bezierCurveTo(88, 44, 96, 66, 88, 92);
+    g.bezierCurveTo(80, 112, 48, 112, 40, 92);
+    g.bezierCurveTo(32, 66, 44, 44, 64, 8);
+    g.fill();
+    const tex = new T.CanvasTexture(c);
+    tex.colorSpace = T.SRGBColorSpace;
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    sp.scale.set(0.85, 0.85, 1);
+    return sp;
+  }
+
+  function makeSnowSprite() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.strokeStyle = '#bfe9ff'; g.lineWidth = 7; g.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI) / 3;
+      g.beginPath();
+      g.moveTo(64 - 44 * Math.cos(a), 64 - 44 * Math.sin(a));
+      g.lineTo(64 + 44 * Math.cos(a), 64 + 44 * Math.sin(a));
+      g.stroke();
+    }
+    g.fillStyle = '#eaf7ff';
+    g.beginPath(); g.arc(64, 64, 12, 0, Math.PI * 2); g.fill();
+    const tex = new T.CanvasTexture(c);
+    tex.colorSpace = T.SRGBColorSpace;
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 }));
+    sp.scale.set(0.7, 0.7, 1);
+    return sp;
+  }
+
+  function arrowLine(from, to, color, y = 0.06) {
+    const grp = new T.Group();
+    const mat = new T.LineBasicMaterial({ color, transparent: true, opacity: 0.95 });
+    const pts = [new T.Vector3(from[0], y, from[1]), new T.Vector3(to[0], y, to[1])];
+    grp.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), mat));
+    // arrowhead
+    const dir = new T.Vector3(to[0] - from[0], 0, to[1] - from[1]);
+    const len = dir.length() || 1; dir.normalize();
+    const perp = new T.Vector3(-dir.z, 0, dir.x);
+    const tip = new T.Vector3(to[0], y, to[1]);
+    const hl = 0.55, hw = 0.32;
+    const p1 = tip.clone().addScaledVector(dir, -hl).addScaledVector(perp, hw);
+    const p2 = tip.clone().addScaledVector(dir, -hl).addScaledVector(perp, -hw);
+    const tri = new T.BufferGeometry().setFromPoints([tip, p1, p2]);
+    grp.add(new T.Mesh(tri, new T.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, side: T.DoubleSide })));
+    return grp;
+  }
+
+  function ringMarker(color, radius = 0.42) {
+    const m = new T.Mesh(
+      new T.RingGeometry(radius - 0.09, radius, 32),
+      new T.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, side: T.DoubleSide })
+    );
+    m.rotation.x = -Math.PI / 2;
+    m.position.y = 0.05;
+    return m;
+  }
+
+  // ------------------------------------------------- 1. play art overlay
+  function clearArt() {
+    if (artGroup) { scene.remove(artGroup); artGroup = null; }
+    artTimer = 0;
+  }
+
+  function showPlayArt(playId, duration = ART_LIFE) {
+    if (!T || !scene) return;
+    const play = PLAYS[playId] || PLAYS.motion;
+    clearArt();
+    lastPlayShown = playId;
+    artGroup = new T.Group();
+    const { playerTeam, cpuTeam, ballTeam } = getState();
+    const off = ballTeam === 'user' ? playerTeam : cpuTeam;
+    const def = ballTeam === 'user' ? cpuTeam : playerTeam;
+
+    // O markers on offense at their play spots, X markers on defense
+    off.forEach((p, i) => {
+      const s = play.spots[i % play.spots.length];
+      const o = ringMarker(COLORS.offense);
+      o.position.set(s[0], 0.05, s[1]);
+      artGroup.add(o);
+      const label = makeTextSprite(String(i + 1), { size: 52, color: '#d8ff48' });
+      label.position.set(s[0], 0.75, s[1]);
+      artGroup.add(label);
+    });
+    def.forEach((p) => {
+      const x = makeTextSprite('✕', { size: 72, color: '#ff5a5a' });
+      x.position.set(p.position.x, 0.75, p.position.z);
+      artGroup.add(x);
+    });
+
+    // movement cuts
+    (play.cuts || []).forEach(([a, b]) => artGroup.add(arrowLine(a, b, COLORS.arrow)));
+    // ball path (dashed feel via short segments)
+    const bp = play.ballPath || [];
+    for (let i = 0; i < bp.length - 1; i++) {
+      artGroup.add(arrowLine(bp[i], bp[i + 1], COLORS.ball));
+    }
+    // screen marker for pick & roll
+    if (play.screen) {
+      const sc = makeTextSprite('S', { size: 56, color: '#ffffff', bg: 'rgba(216,255,72,.25)' });
+      sc.position.set(play.screen[0], 0.9, play.screen[1]);
+      artGroup.add(sc);
+    }
+    // title card floating over half court
+    const title = makeTextSprite(play.name, { size: 40, color: '#ffffff' });
+    title.scale.set(4.4, 1.1, 1);
+    title.position.set(0, 3.4, 0);
+    artGroup.add(title);
+
+    scene.add(artGroup);
+    artTimer = duration;
+  }
+
+  // ------------------------------------------------- 2. shot chart
+  function ensureUI() {
+    if (uiRoot) return;
+    uiRoot = document.createElement('div');
+    uiRoot.id = 'pv-ui';
+    uiRoot.style.cssText = 'position:fixed;inset:0;z-index:4;pointer-events:none;font-family:Arial,Helvetica,sans-serif';
+    document.body.appendChild(uiRoot);
+
+    const wrap = document.createElement('div');
+    wrap.id = 'pv-shotchart';
+    wrap.style.cssText = `position:absolute;right:14px;bottom:86px;width:300px;background:${COLORS.board}f2;border:1px solid ${COLORS.line};border-radius:6px;padding:10px 12px;pointer-events:auto;display:none;box-shadow:0 12px 40px rgba(0,0,0,.5)`;
+    wrap.innerHTML = `<div style="font-size:10px;letter-spacing:.22em;color:${COLORS.text};font-weight:900;margin-bottom:6px">SHOT CHART <span style="color:${COLORS.dim};font-weight:400">· live</span></div>`;
+    shotCanvas = document.createElement('canvas');
+    shotCanvas.width = 276; shotCanvas.height = 150;
+    shotCanvas.style.cssText = 'width:100%;display:block';
+    wrap.appendChild(shotCanvas);
+    const legend = document.createElement('div');
+    legend.style.cssText = `margin-top:6px;font-size:9px;letter-spacing:.08em;color:${COLORS.dim};display:flex;gap:12px`;
+    legend.innerHTML = `<span><i style="color:#7CFC00">●</i> YOU MAKE</span><span><i style="color:#ff5a5a">●</i> YOU MISS</span><span><i style="color:#7ab8ff">●</i> OPP MAKE</span><span><i style="color:#c26a6a">●</i> OPP MISS</span>`;
+    wrap.appendChild(legend);
+    uiRoot.appendChild(wrap);
+    shotCtx = shotCanvas.getContext('2d');
+  }
+
+  function recordShot(x, z, made, team, handler) {
+    const s = { x: clamp(x, -14, 14), z: clamp(z, -7.5, 7.5), made: !!made, team, handler };
+    shots.push(s);
+    if (team === 'user' || team === 'cpu') {
+      const arr = playerShots[team][handler] || (playerShots[team][handler] = []);
+      arr.push(made ? 1 : 0);
+      if (arr.length > 12) arr.shift();
+    }
+    if (shotChartOn) drawShotChart();
+    refreshHotCold();
+  }
+
+  function drawShotChart() {
+    if (!shotCtx) return;
+    const ctx = shotCtx, w = shotCanvas.width, h = shotCanvas.height, pad = 10;
+    ctx.clearRect(0, 0, w, h);
+    drawMiniCourt(ctx, w, h, pad);
+    for (const s of shots) {
+      const [px, py] = courtToMini(s.x, s.z, w, h, pad);
+      ctx.beginPath();
+      ctx.arc(px, py, 3.4, 0, Math.PI * 2);
+      if (s.team === 'user') ctx.fillStyle = s.made ? '#7CFC00' : '#ff5a5a';
+      else ctx.fillStyle = s.made ? '#7ab8ff' : '#c26a6a';
+      ctx.fill();
+      if (!s.made) {
+        ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+  }
+
+  function setShotChartVisible(v) {
+    shotChartOn = !!v;
+    ensureUI();
+    $('pv-shotchart').style.display = v ? 'block' : 'none';
+    if (v) drawShotChart();
+  }
+
+  // ------------------------------------------------- 3. matchup display
+  function setMatchupsVisible(v) {
+    matchupsOn = !!v;
+    if (!T || !scene) return;
+    if (matchupGroup) { scene.remove(matchupGroup); matchupGroup = null; }
+    if (!v) return;
+    matchupGroup = new T.Group();
+    const { playerTeam, cpuTeam, ballTeam } = getState();
+    const def = ballTeam === 'user' ? cpuTeam : playerTeam;
+    const off = ballTeam === 'user' ? playerTeam : cpuTeam;
+    // nearest-man assignments
+    def.forEach((d) => {
+      let best = null, bd = 1e9;
+      off.forEach((o) => {
+        const dist = d.position.distanceTo(o.position);
+        if (dist < bd) { bd = dist; best = o; }
+      });
+      if (!best) return;
+      const mat = new T.LineBasicMaterial({ color: COLORS.defense, transparent: true, opacity: 0.4 });
+      const geo = new T.BufferGeometry().setFromPoints([
+        new T.Vector3(d.position.x, 1.4, d.position.z),
+        new T.Vector3(best.position.x, 1.4, best.position.z),
+      ]);
+      matchupGroup.add(new T.Line(geo, mat));
+    });
+    scene.add(matchupGroup);
+  }
+
+  // ------------------------------------------------- 4. hot / cold
+  function heatOf(team, i) {
+    const arr = (playerShots[team] && playerShots[team][i]) || [];
+    const w = arr.slice(-HOT_WINDOW);
+    if (w.length < 3) return 0;
+    const makes = w.reduce((a, b) => a + b, 0);
+    if (makes >= HOT_MAKES) return 1;
+    if (w.length - makes >= COLD_MISSES) return -1;
+    return 0;
+  }
+
+  function refreshHotCold() {
+    if (!T || !scene) return;
+    if (hotGroup) { scene.remove(hotGroup); hotGroup = null; }
+    hotGroup = new T.Group();
+    const { playerTeam, cpuTeam } = getState();
+    const place = (p, team, i) => {
+      const h = heatOf(team, i);
+      if (!h) return;
+      const sp = h > 0 ? makeFlameSprite() : makeSnowSprite();
+      sp.position.set(p.position.x, 2.85, p.position.z);
+      sp.userData.follow = p;
+      hotGroup.add(sp);
+      const ring = ringMarker(h > 0 ? COLORS.hot : COLORS.cold, 0.5);
+      ring.position.set(p.position.x, 0.05, p.position.z);
+      ring.userData.follow = p;
+      hotGroup.add(ring);
+    };
+    playerTeam.forEach((p, i) => place(p, 'user', i));
+    cpuTeam.forEach((p, i) => place(p, 'cpu', i));
+    scene.add(hotGroup);
+  }
+
+  // ------------------------------------------------- 5. play call menu
+  function openPlayMenu(onPick) {
+    ensureUI();
+    closePlayMenu();
+    menuEl = document.createElement('div');
+    menuEl.id = 'pv-playmenu';
+    menuEl.style.cssText = `position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(3,6,10,.72);backdrop-filter:blur(6px);pointer-events:auto`;
+    const card = document.createElement('div');
+    card.style.cssText = `background:${COLORS.board};border:1px solid ${COLORS.line};border-radius:10px;padding:22px 24px;max-width:min(860px,94vw);box-shadow:0 30px 90px rgba(0,0,0,.6)`;
+    card.innerHTML = `<div style="font-size:11px;letter-spacing:.3em;color:${COLORS.text};font-weight:900;margin-bottom:4px">COACH'S TABLET · PLAY CALL</div>
+      <div style="font-size:12px;color:${COLORS.dim};margin-bottom:16px">Tap a play to send it to the floor. The diagram shows for 3 seconds.</div>
+      <div id="pv-plays" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px"></div>
+      <button id="pv-menuclose" style="margin-top:16px;width:100%;padding:11px;background:transparent;border:1px solid ${COLORS.line};color:${COLORS.text};letter-spacing:.2em;font-weight:900;font-size:11px;border-radius:4px;cursor:pointer">CLOSE</button>`;
+    menuEl.appendChild(card);
+    document.body.appendChild(menuEl);
+
+    const grid = card.querySelector('#pv-plays');
+    Object.entries(PLAYS).forEach(([id, play]) => {
+      const cell = document.createElement('div');
+      cell.style.cssText = `border:1px solid ${COLORS.line};border-radius:6px;padding:10px;cursor:pointer;transition:border-color .15s,transform .15s;background:#0e141c`;
+      cell.onmouseenter = () => { cell.style.borderColor = '#d8ff48'; cell.style.transform = 'translateY(-3px)'; };
+      cell.onmouseleave = () => { cell.style.borderColor = COLORS.line; cell.style.transform = 'none'; };
+      const cv = document.createElement('canvas');
+      cv.width = 200; cv.height = 120;
+      cv.style.cssText = 'width:100%;display:block';
+      cell.appendChild(cv);
+      const meta = document.createElement('div');
+      meta.innerHTML = `<div style="font-size:12px;font-weight:900;letter-spacing:.08em;color:${COLORS.text};margin-top:8px">${play.name}</div>
+        <div style="font-size:10px;color:${COLORS.dim};margin-top:2px">${play.blurb}</div>`;
+      cell.appendChild(meta);
+      cell.onclick = () => { closePlayMenu(); onPick && onPick(id); };
+      grid.appendChild(cell);
+      drawPlayDiagram(cv.getContext('2d'), id);
+    });
+    card.querySelector('#pv-menuclose').onclick = closePlayMenu;
+    menuEl.onclick = (e) => { if (e.target === menuEl) closePlayMenu(); };
+  }
+
+  function closePlayMenu() {
+    if (menuEl) { menuEl.remove(); menuEl = null; }
+  }
+
+  function drawPlayDiagram(ctx, playId) {
+    const play = PLAYS[playId];
+    const w = 200, h = 120, pad = 8;
+    ctx.clearRect(0, 0, w, h);
+    drawMiniCourt(ctx, w, h, pad);
+    // offense O's at spots
+    play.spots.forEach(([x, z], i) => {
+      const [px, py] = courtToMini(x, z, w, h, pad);
+      ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2);
+      ctx.strokeStyle = '#d8ff48'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#d8ff48'; ctx.font = '700 8px Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), px, py);
+    });
+    // cuts
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6;
+    (play.cuts || []).forEach(([a, b]) => {
+      const [ax, ay] = courtToMini(a[0], a[1], w, h, pad);
+      const [bx, by] = courtToMini(b[0], b[1], w, h, pad);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      const ang = Math.atan2(by - ay, bx - ax);
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx - 7 * Math.cos(ang - 0.45), by - 7 * Math.sin(ang - 0.45));
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx - 7 * Math.cos(ang + 0.45), by - 7 * Math.sin(ang + 0.45));
+      ctx.stroke();
+    });
+    // ball path in orange
+    ctx.strokeStyle = '#ffb020'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    (play.ballPath || []).forEach(([x, z], i) => {
+      const [px, py] = courtToMini(x, z, w, h, pad);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    // screen marker
+    if (play.screen) {
+      const [px, py] = courtToMini(play.screen[0], play.screen[1], w, h, pad);
+      ctx.fillStyle = '#ffffff'; ctx.font = '900 11px Arial';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('S', px, py - 12);
+    }
+  }
+
+  // --------------------------------------- 6. defensive scheme visualization
+  function refreshZoneOverlay() {
+    if (!T || !scene) return;
+    if (zoneGroup) { scene.remove(zoneGroup); zoneGroup = null; }
+    const { defense, ballTeam } = getState();
+    // 'paint' (protect the paint) and 'switch' get zone shading; man/pressure use matchup lines
+    if (defense !== 'paint' && defense !== 'switch') return;
+    zoneGroup = new T.Group();
+    const mat = new T.MeshBasicMaterial({ color: COLORS.zone, transparent: true, opacity: 0.13, side: T.DoubleSide, depthWrite: false });
+    // zone boxes on the defensive half (defense defends -x basket when ballTeam==='user')
+    const side = ballTeam === 'user' ? -1 : 1;
+    const zones = defense === 'paint'
+      ? [[-9, 0, 10, 12], [-3.5, -4, 5, 6], [-3.5, 4, 5, 6]]   // packed 2-3-ish
+      : [[-11, -5, 6, 5], [-11, 5, 6, 5], [-4, 0, 8, 14]];      // extended switch shell
+    zones.forEach(([cx, cz, w, d]) => {
+      const m = new T.Mesh(new T.PlaneGeometry(w, d), mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(side * Math.abs(cx), 0.04, cz);
+      zoneGroup.add(m);
+      const edge = new T.LineSegments(
+        new T.EdgesGeometry(new T.PlaneGeometry(w, d)),
+        new T.LineBasicMaterial({ color: COLORS.zone, transparent: true, opacity: 0.5 })
+      );
+      edge.rotation.x = -Math.PI / 2;
+      edge.position.copy(m.position);
+      zoneGroup.add(edge);
+    });
+    scene.add(zoneGroup);
+  }
+
+  // ---------------------------------------------------------------- update
+  let lastDefSeen = null;
+  function update(dt) {
+    // fade + retire play art
+    if (artGroup && artTimer > 0) {
+      artTimer -= dt;
+      const k = clamp(artTimer / 0.6, 0, 1); // fade last 0.6s
+      artGroup.traverse((o) => {
+        if (o.material && o.material.transparent) o.material.opacity = Math.min(o.material.opacity, k);
+      });
+      if (artTimer <= 0) clearArt();
+    }
+    // keep hot/cold markers glued to players
+    if (hotGroup) {
+      hotGroup.children.forEach((s) => {
+        if (s.userData.follow) s.position.set(s.userData.follow.position.x, s.position.y, s.userData.follow.position.z);
+      });
+      // gentle bob on flames
+      const t = performance.now() / 1000;
+      hotGroup.children.forEach((s, i) => {
+        if (s.isSprite) s.position.y += Math.sin(t * 3 + i) * 0.0015;
+      });
+    }
+    // refresh matchup lines positions (cheap: rebuild every ~0.5s)
+    update._mt = (update._mt || 0) + dt;
+    if (matchupsOn && update._mt > 0.5) {
+      update._mt = 0;
+      setMatchupsVisible(true);
+    }
+    // watch for defensive scheme changes
+    const { defense } = getState();
+    if (defense !== lastDefSeen) {
+      lastDefSeen = defense;
+      refreshZoneOverlay();
+      // man schemes pair naturally with matchup lines
+      if ((defense === 'man' || defense === 'pressure') && !matchupsOn) {
+        // leave toggle to the coach; nothing automatic
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------ api
+  function init(options = {}) {
+    opts = options || {};
+    T = opts.THREE || (typeof window !== 'undefined' && window.THREE) || null;
+    scene = opts.scene || null;
+    if (!T) throw new Error('[PlayVisuals] THREE namespace required: PlayVisuals.init({ THREE, scene })');
+    if (!scene) throw new Error('[PlayVisuals] scene required: PlayVisuals.init({ THREE, scene })');
+    ensureUI();
+    lastDefSeen = getState().defense;
+    refreshZoneOverlay();
+    return api;
+  }
+
+  const api = {
+    init,
+    update,
+    showPlayArt,
+    clearArt,
+    recordShot,
+    setShotChartVisible,
+    setMatchupsVisible,
+    openPlayMenu,
+    closePlayMenu,
+    refreshHotCold,
+    refreshZoneOverlay,
+    heatOf,
+    PLAYS: () => JSON.parse(JSON.stringify(PLAYS)),
+    getShots: () => shots.slice(),
+    clearShots: () => { shots.length = 0; for (const t of ['user', 'cpu']) playerShots[t] = [[],[],[],[],[]]; if (shotCtx) drawShotChart(); refreshHotCold(); },
+  };
+  return api;
+})();
+
+// UMD-ish export for non-module inclusion
+if (typeof module !== 'undefined' && module.exports) module.exports = PlayVisuals;
+if (typeof window !== 'undefined') window.PlayVisuals = PlayVisuals;
+
+
+
+/* ===== INLINED: stats-overlay.js ===== */
+/* =========================================================================
+   COURTSIDE 27 — STATS & ANALYTICS OVERLAY  (spec: stats-overlay.js)
+   -------------------------------------------------------------------------
+   A self-contained broadcast-style analytics module for the coach.
+   Drop this file into the page (after the game script) and call:
+
+       CourtsideStats.init({
+         home: { abbr:'BOS', name:'BOSTON CELTICS', color:'#008348',
+                 roster:[{name:'Rajon Rondo', number:9, pos:'PG'}, ...] },
+         away: { abbr:'MIA', name:'MIAMI HEAT', color:'#98002e',
+                 roster:[...] }
+       });
+
+   Then feed game events (wire these into the game's event sites):
+
+       CourtsideStats.score({ team:'home', player:'Dwyane Wade', points:2,
+                              kind:'LAYUP' });            // made basket
+       CourtsideStats.miss({ team:'away', player:'Ray Allen', points:3,
+                             kind:'JUMPER' });            // missed FG
+       CourtsideStats.freeThrow({ team:'home', player:'Dwyane Wade', made:1, attempts:2 });
+       CourtsideStats.rebound({ team:'home', player:'Kevin Garnett', offensive:true });
+       CourtsideStats.assist({ team:'home', player:'Rajon Rondo' });
+       CourtsideStats.steal({ team:'away', player:'Dwyane Wade' });
+       CourtsideStats.block({ team:'home', player:'Kendrick Perkins' });
+       CourtsideStats.turnover({ team:'away', player:'Mario Chalmers', type:'Bad pass' });
+       CourtsideStats.foul({ team:'home', player:'Kevin Garnett' });
+       CourtsideStats.setLineup('home', ['Rajon Rondo','Ray Allen','Paul Pierce','Kevin Garnett','Kendrick Perkins']);
+       CourtsideStats.substitution({ team:'home', out:'Kendrick Perkins', in:'Glen Davis' });
+       CourtsideStats.endQuarter(1);   // quarter number just finished
+       CourtsideStats.reset();         // new game
+
+   UI:
+       CourtsideStats.toggleDashboard();   // full coach dashboard (also bound to key "S")
+       CourtsideStats.showBoxScore();      // floating box score panel
+       CourtsideStats.graphic('WADE: 30 PTS', '12-18 FG · 4 AST', '#98002e');  // manual broadcast graphic
+
+   Demo (preview without a game):  CourtsideStats.demo();
+
+   Suggested game wiring sites (public/index.html line refs, Oct 2026 build):
+     shot resolution .... line ~445  (made/team/pts/typ/shot.handler)
+     steal .............. line ~424  (attemptSteal success)
+     block .............. line ~423  (blockAttempt success -> shot.made=false)
+     turnover ........... line ~411  (pass intercepted), ~440 (out of bounds)
+     foul ............... line ~416  (resolveShootingFoul / userData.fouls)
+     substitution ....... line ~472  (coachSubstitute swaps userData.roster)
+     score .............. line ~405  (updateUI: scoreUser/scoreCPU)
+   ========================================================================= */
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------------ state */
+var S = null;   // game state, created by init()
+
+function blankPlayer(name, number, pos) {
+  return {
+    name: name, number: number || 0, pos: pos || '',
+    min: 0,                       // seconds on floor
+    pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+    oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
+    plusMinus: 0,
+    zones: { paint: { m: 0, a: 0 }, mid: { m: 0, a: 0 }, three: { m: 0, a: 0 } }
+  };
+}
+
+function blankTeam(cfg) {
+  var players = {};
+  (cfg.roster || []).forEach(function (r) {
+    players[r.name] = blankPlayer(r.name, r.number, r.pos);
+  });
+  return {
+    abbr: cfg.abbr, name: cfg.name, color: cfg.color || '#f3b544',
+    players: players, order: (cfg.roster || []).map(function (r) { return r.name; }),
+    lineup: [], lineupStart: 0, lineups: {},   // key -> {names, min, plus, minus}
+    fastBreakPts: 0, paintPts: 0,
+    run: 0, lastScorer: null,                  // scoring-run tracking
+    lastPts: 0
+  };
+}
+
+function now() { return Date.now() / 1000; }
+
+function ensurePlayer(team, name) {
+  if (!team.players[name]) {
+    team.players[name] = blankPlayer(name, 0, '');
+    team.order.push(name);
+  }
+  return team.players[name];
+}
+
+function lineupKey(names) {
+  return names.slice().sort().join('|');
+}
+
+/* ------------------------------------------------------- CSS (broadcast) */
+var CSS = [
+'.cs27{font-family:"Arial Narrow",Arial,Helvetica,sans-serif;color:#eef2f6;-webkit-font-smoothing:antialiased}',
+'.cs27 .num{font-variant-numeric:tabular-nums}',
+'#cs27-dash{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(2,5,8,.78);backdrop-filter:blur(6px)}',
+'#cs27-dash.open{display:flex}',
+'.cs27-card{width:min(1060px,94vw);max-height:92vh;overflow:auto;background:linear-gradient(160deg,#0c1219 0%,#070b10 100%);border:1px solid #2a3542;border-top:3px solid #f3b544;border-radius:6px;box-shadow:0 40px 120px rgba(0,0,0,.7)}',
+'.cs27-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #1c2632;position:sticky;top:0;background:#0a0f15;z-index:2}',
+'.cs27-head h2{margin:0;font-size:15px;letter-spacing:.28em;font-weight:900;color:#fff}',
+'.cs27-head h2 b{color:#f3b544}',
+'.cs27-score{font-size:26px;font-weight:900;letter-spacing:.06em}',
+'.cs27-tabs{display:flex;gap:4px;padding:10px 20px 0;border-bottom:1px solid #1c2632}',
+'.cs27-tab{padding:9px 18px;font-size:11px;letter-spacing:.22em;font-weight:900;color:#8a9aab;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer}',
+'.cs27-tab.on{color:#f3b544;border-bottom-color:#f3b544}',
+'.cs27-body{padding:18px 20px 24px}',
+'.cs27-close{background:#141c26;color:#fff;border:1px solid #2a3542;border-radius:3px;padding:7px 14px;font-size:11px;letter-spacing:.18em;font-weight:900;cursor:pointer}',
+'.cs27-close:hover{border-color:#f3b544;color:#f3b544}',
+'table.cs27-table{width:100%;border-collapse:collapse;font-size:12px}',
+'.cs27-table th{font-size:9px;letter-spacing:.16em;color:#7a8a9c;font-weight:900;text-align:right;padding:7px 8px;border-bottom:1px solid #2a3542;white-space:nowrap}',
+'.cs27-table th:first-child,.cs27-table td:first-child{text-align:left}',
+'.cs27-table td{text-align:right;padding:6px 8px;border-bottom:1px solid #131b24;white-space:nowrap}',
+'.cs27-table tr.hl td{background:rgba(243,181,68,.07)}',
+'.cs27-table tr.tot td{font-weight:900;border-top:2px solid #2a3542;border-bottom:none;color:#fff;background:#0d141c}',
+'.cs27-pname{font-weight:700;color:#fff;max-width:170px;overflow:hidden;text-overflow:ellipsis}',
+'.cs27-pname small{color:#7a8a9c;font-weight:400;margin-left:6px}',
+'.cs27-pos{color:#5a6a7c;font-size:10px;margin-right:6px}',
+'.cs27-pm-pos{color:#7ee787}.cs27-pm-neg{color:#ff7b72}',
+'.cs27-teamhead td{background:#101820!important;font-size:13px;letter-spacing:.2em;font-weight:900;color:#fff;border-bottom:2px solid #2a3542!important}',
+'.cs27-teamhead .dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:baseline}',
+/* team comparison bars */
+'.cs27-cmp{max-width:720px;margin:0 auto}',
+'.cs27-crow{display:grid;grid-template-columns:1fr 130px 1fr;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #131b24}',
+'.cs27-crow .lab{text-align:center;font-size:10px;letter-spacing:.2em;color:#7a8a9c;font-weight:900}',
+'.cs27-cside{display:flex;align-items:center;gap:8px}',
+'.cs27-cside.r{flex-direction:row-reverse;text-align:right}',
+'.cs27-cval{font-size:15px;font-weight:900;min-width:52px}',
+'.cs27-cbar{flex:1;height:8px;background:#141c26;border-radius:4px;overflow:hidden;position:relative}',
+'.cs27-cbar i{display:block;height:100%;border-radius:4px;transition:width .5s}',
+'.cs27-cside.r .cs27-cbar i{margin-left:auto}',
+'.cs27-win{color:#f3b544!important}',
+/* shot zones */
+'.cs27-zones{display:flex;gap:26px;justify-content:center;flex-wrap:wrap}',
+'.cs27-zone-team{text-align:center}',
+'.cs27-zone-team h4{margin:0 0 8px;font-size:12px;letter-spacing:.24em}',
+'.cs27-zrow{display:flex;gap:8px;justify-content:center;margin-top:10px}',
+'.cs27-z{flex:1;min-width:86px;background:#101820;border:1px solid #1e2836;border-radius:4px;padding:8px 6px}',
+'.cs27-z b{display:block;font-size:16px}',
+'.cs27-z span{font-size:9px;letter-spacing:.14em;color:#7a8a9c}',
+'.cs27-z em{display:block;font-style:normal;font-size:11px;color:#aeb9c4;margin-top:2px}',
+/* lineups */
+'.cs27-lu{font-size:11px;color:#aeb9c4}',
+/* broadcast graphic (lower-third alert) */
+'#cs27-alert{position:fixed;right:22px;bottom:96px;z-index:70;min-width:300px;max-width:380px;background:linear-gradient(100deg,#0b1118 78%,#101820);border:1px solid #2a3542;border-left:5px solid #f3b544;border-radius:4px;padding:13px 16px 12px;box-shadow:0 18px 60px rgba(0,0,0,.65);transform:translateX(120%);transition:transform .45s cubic-bezier(.2,.9,.25,1);pointer-events:none}',
+'#cs27-alert.show{transform:translateX(0)}',
+'#cs27-alert .k{font-size:9px;letter-spacing:.3em;color:#f3b544;font-weight:900;margin-bottom:5px}',
+'#cs27-alert .t{font-size:21px;font-weight:900;color:#fff;letter-spacing:.02em;line-height:1.15}',
+'#cs27-alert .s{font-size:12px;color:#aeb9c4;margin-top:4px;letter-spacing:.04em}',
+/* floating box score */
+'#cs27-box{position:fixed;left:18px;top:84px;z-index:55;width:392px;max-height:70vh;overflow:auto;display:none;background:rgba(7,11,16,.96);border:1px solid #2a3542;border-top:3px solid #f3b544;border-radius:5px;box-shadow:0 24px 70px rgba(0,0,0,.6)}',
+'#cs27-box.open{display:block}',
+'#cs27-box table{font-size:11px}',
+'#cs27-box .cs27-table td{padding:5px 6px}',
+'.cs27-fab{position:fixed;right:18px;top:84px;z-index:55;display:flex;gap:8px}',
+'.cs27-btn{background:rgba(10,15,21,.92);color:#fff;border:1px solid #2a3542;border-radius:4px;padding:8px 13px;font-size:10px;letter-spacing:.2em;font-weight:900;cursor:pointer;font-family:inherit}',
+'.cs27-btn:hover{border-color:#f3b544;color:#f3b544}',
+'.cs27-note{font-size:10px;color:#5a6a7c;letter-spacing:.08em;margin-top:14px;text-align:center}'
+].join('\n');
+
+var cssInjected = false;
+function injectCSS() {
+  if (cssInjected) return;
+  cssInjected = true;
+  var st = document.createElement('style');
+  st.id = 'cs27-stats-css';
+  st.textContent = CSS;
+  document.head.appendChild(st);
+}
+
+/* ============================================================
+   EVENT INGESTION + DERIVED STATS
+   team: 'home' | 'away'
+   ============================================================ */
+
+function T(side) { return side === 'home' ? S.home : S.away; }
+function O(side) { return side === 'home' ? S.away : S.home; }
+
+/* --- lineups & plus/minus --------------------------------------------
+   The game swaps roster identity onto fixed models (coachSubstitute),
+   so lineups are tracked by player NAME, set explicitly via setLineup()
+   or incrementally via substitution(). Floor time accrues per player.  */
+function stampFloorTime() {
+  var t = now(), dt;
+  ['home', 'away'].forEach(function (side) {
+    var tm = T(side);
+    if (!tm.lineup.length) return;
+    dt = t - tm.lineupStart;
+    tm.lineup.forEach(function (nm) { ensurePlayer(tm, nm).min += dt; });
+    var k = lineupKey(tm.lineup);
+    if (tm.lineups[k]) tm.lineups[k].min += dt;
+    tm.lineupStart = t;
+  });
+}
+
+function applyScore(teamSide, pts) {
+  stampFloorTime();
+  var tm = T(teamSide), opp = O(teamSide);
+  tm.lastPts += pts;
+  // run tracking: unanswered points by one team
+  if (tm.lastScorer === teamSide || tm.lastScorer === null && opp.lastScorer === null) {
+    tm.run += pts;
+  } else {
+    tm.run = pts;
+  }
+  tm.lastScorer = teamSide;
+  opp.lastScorer = null; opp.run = 0;
+  // lineup +/-
+  [tm, opp].forEach(function (tx, i) {
+    var diff = (i === 0 ? pts : -pts);
+    tx.lineup.forEach(function (nm) { ensurePlayer(tx, nm).plusMinus += diff; });
+    var k = lineupKey(tx.lineup);
+    if (tx.lineups[k]) { tx.lineups[k].plus += (i === 0 ? pts : 0); tx.lineups[k].minus += (i === 0 ? 0 : pts); }
+  });
+  checkRunAlert(tm);
+}
+
+function zoneOf(points, kind) {
+  if (points === 3) return 'three';
+  if (kind === 'LAYUP' || kind === 'DUNK') return 'paint';
+  return 'mid';
+}
+
+function checkMilestones(tm, p) {
+  var q = [];
+  if (p.pts === 20 || p.pts === 30 || p.pts === 40) q.push({ t: p.name.toUpperCase() + ': ' + p.pts + ' PTS', s: fgLine(p) + ' FG' });
+  if (p.pts >= 10 && p.reb() >= 10 && !p._dd) { p._dd = true; q.push({ t: 'DOUBLE-DOUBLE', s: p.name + ' · ' + p.pts + ' PTS, ' + p.reb() + ' REB' }); }
+  if (p.ast === 10 && !p._a10) { p._a10 = true; q.push({ t: '10 ASSISTS', s: p.name + ' running the show' }); }
+  if (p.stl === 5 && !p._s5) { p._s5 = true; q.push({ t: '5 STEALS', s: p.name + ' wreaking havoc' }); }
+  if (p.blk === 5 && !p._b5) { p._b5 = true; q.push({ t: '5 BLOCKS', s: p.name + ' protecting the rim' }); }
+  q.forEach(function (a) { broadcast(a.t, a.s, tm.color, 'MILESTONE'); });
+}
+
+function checkRunAlert(tm) {
+  if (tm.run >= 8 && !tm._runFired) {
+    tm._runFired = true;
+    broadcast(tm.abbr + ': ' + tm.run + '-0 RUN', 'Momentum swinging ' + (tm === S.home ? 'home' : 'away') + ' · timeout territory', tm.color, 'SCORING RUN');
+  }
+  if (tm.run < 8) tm._runFired = false;
+}
+
+function fgLine(p) { return p.fgm + '-' + p.fga; }
+
+/* --- public event hooks ---------------------------------------------- */
+var API = {};
+
+API.score = function (ev) {
+  // ev: {team, player, points, kind, fastBreak?, assistedBy?}
+  if (!S) return;
+  var tm = T(ev.team), p = ensurePlayer(tm, ev.player);
+  var z = zoneOf(ev.points, ev.kind);
+  p.pts += ev.points; p.fgm++; p.fga++;
+  p.zones[z].m++; p.zones[z].a++;
+  if (ev.points === 3) { p.tpm++; p.tpa++; }
+  if (z === 'paint') tm.paintPts += ev.points;
+  if (ev.fastBreak) tm.fastBreakPts += ev.points;
+  if (ev.assistedBy) ensurePlayer(tm, ev.assistedBy).ast++;
+  applyScore(ev.team, ev.points);
+  checkMilestones(tm, p);
+  API.render();
+};
+
+API.miss = function (ev) {
+  // ev: {team, player, points, kind}
+  if (!S) return;
+  var tm = T(ev.team), p = ensurePlayer(tm, ev.player);
+  var z = zoneOf(ev.points, ev.kind);
+  p.fga++; p.zones[z].a++;
+  if (ev.points === 3) p.tpa++;
+  API.render();
+};
+
+API.freeThrow = function (ev) {
+  // ev: {team, player, made, attempts}
+  if (!S) return;
+  var tm = T(ev.team), p = ensurePlayer(tm, ev.player);
+  p.ftm += ev.made; p.fta += ev.attempts;
+  if (ev.made > 0) { p.pts += ev.made; applyScore(ev.team, ev.made); }
+  API.render();
+};
+
+API.rebound = function (ev) {
+  // ev: {team, player, offensive}
+  if (!S) return;
+  var p = ensurePlayer(T(ev.team), ev.player);
+  if (ev.offensive) p.oreb++; else p.dreb++;
+  checkMilestones(T(ev.team), p);
+  API.render();
+};
+
+API.assist = function (ev) {
+  if (!S) return;
+  var p = ensurePlayer(T(ev.team), ev.player);
+  p.ast++;
+  checkMilestones(T(ev.team), p);
+  API.render();
+};
+
+API.steal = function (ev) {
+  if (!S) return;
+  var p = ensurePlayer(T(ev.team), ev.player);
+  p.stl++;
+  ensurePlayer(O(ev.team), ev.victim || '').tov += ev.victim ? 1 : 0;
+  checkMilestones(T(ev.team), p);
+  broadcast('STEAL', p.name + ' · ' + p.stl + ' STL', T(ev.team).color, 'HUSTLE');
+  API.render();
+};
+
+API.block = function (ev) {
+  if (!S) return;
+  var p = ensurePlayer(T(ev.team), ev.player);
+  p.blk++;
+  checkMilestones(T(ev.team), p);
+  broadcast('REJECTED', p.name + ' · ' + p.blk + ' BLK', T(ev.team).color, 'DEFENSE');
+  API.render();
+};
+
+API.turnover = function (ev) {
+  // ev: {team, player, type}
+  if (!S) return;
+  ensurePlayer(T(ev.team), ev.player).tov++;
+  API.render();
+};
+
+API.foul = function (ev) {
+  if (!S) return;
+  var p = ensurePlayer(T(ev.team), ev.player);
+  p.pf++;
+  if (p.pf === 5) broadcast('FOUL TROUBLE', p.name + ' · 5 PF', T(ev.team).color, 'FOULS');
+  if (p.pf >= 6) broadcast('FOULED OUT', p.name + ' is done for the night', T(ev.team).color, 'FOULS');
+  API.render();
+};
+
+API.setLineup = function (teamSide, names) {
+  if (!S) return;
+  stampFloorTime();
+  var tm = T(teamSide);
+  tm.lineup = names.slice();
+  tm.lineupStart = now();
+  var k = lineupKey(names);
+  if (!tm.lineups[k]) tm.lineups[k] = { names: names.slice(), min: 0, plus: 0, minus: 0 };
+  names.forEach(function (nm) { ensurePlayer(tm, nm); });
+  API.render();
+};
+
+API.substitution = function (ev) {
+  // ev: {team, out, in}
+  if (!S) return;
+  var tm = T(ev.team);
+  var nl = tm.lineup.map(function (nm) { return nm === ev.out ? ev.in : nm; });
+  API.setLineup(ev.team, nl);
+  broadcast('SUBSTITUTION', ev.in + ' in for ' + ev.out, tm.color, 'ROTATION');
+};
+
+API.endQuarter = function (q) {
+  if (!S) return;
+  S.quarter = q + 1;
+  API.render();
+};
+
+API.reset = function () {
+  if (!S) return;
+  var cfg = S._cfg;
+  initState(cfg);
+  API.renderAll();
+};
+
+/* --- derived team totals ---------------------------------------------- */
+function teamTotals(tm) {
+  var t = { pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0,
+            oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, tov: 0, pf: 0,
+            paint: { m: 0, a: 0 }, mid: { m: 0, a: 0 }, three: { m: 0, a: 0 } };
+  Object.keys(tm.players).forEach(function (k) {
+    var p = tm.players[k];
+    t.pts += p.pts; t.fgm += p.fgm; t.fga += p.fga; t.tpm += p.tpm; t.tpa += p.tpa;
+    t.ftm += p.ftm; t.fta += p.fta; t.oreb += p.oreb; t.dreb += p.dreb;
+    t.ast += p.ast; t.stl += p.stl; t.blk += p.blk; t.tov += p.tov; t.pf += p.pf;
+    ['paint', 'mid', 'three'].forEach(function (z) { t[z].m += p.zones[z].m; t[z].a += p.zones[z].a; });
+  });
+  t.reb = t.oreb + t.dreb;
+  return t;
+}
+
+function pct(m, a) { return a > 0 ? (100 * m / a) : 0; }
+function fmtPct(m, a) { return a > 0 ? (100 * m / a).toFixed(1) : '—'; }
+function fmtClock(sec) {
+  sec = Math.floor(sec);
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+// rebound accessor attached lazily (kept off the blank template for JSON safety)
+function withHelpers(p) {
+  if (!p.reb) p.reb = function () { return this.oreb + this.dreb; };
+  return p;
+}
+
+/* ============================================================
+   UI BUILDERS
+   ============================================================ */
+
+function el(tag, cls, html) {
+  var d = document.createElement(tag);
+  if (cls) d.className = cls;
+  if (html != null) d.innerHTML = html;
+  return d;
+}
+
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+function pmClass(v) { return v > 0 ? 'cs27-pm-pos' : (v < 0 ? 'cs27-pm-neg' : ''); }
+function pmText(v) { return (v > 0 ? '+' : '') + v; }
+
+/* --- box score table for one team --- */
+function boxTable(tm) {
+  var t = el('table', 'cs27-table num');
+  var html = '<tr class="cs27-teamhead"><td colspan="14"><span class="dot" style="background:' +
+    tm.color + '"></span>' + esc(tm.abbr) + ' · ' + esc(tm.name) + '</td></tr>';
+  html += '<tr><th>PLAYER</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th>' +
+          '<th>TO</th><th>PF</th><th>FG</th><th>3P</th><th>FT</th><th>FG%</th><th>+/-</th></tr>';
+  var rows = tm.order.map(function (nm) { return withHelpers(tm.players[nm]); })
+    .filter(Boolean)
+    .sort(function (a, b) { return b.pts - a.pts || b.min - a.min; });
+  rows.forEach(function (p, i) {
+    html += '<tr' + (i % 2 ? '' : ' class="hl"') + '><td><span class="cs27-pos">' + esc(p.pos) +
+      '</span><span class="cs27-pname">' + esc(p.name) + '<small>#' + p.number + '</small></span></td>' +
+      '<td>' + fmtClock(p.min) + '</td><td><b>' + p.pts + '</b></td>' +
+      '<td>' + p.reb() + '</td><td>' + p.ast + '</td><td>' + p.stl + '</td><td>' + p.blk + '</td>' +
+      '<td>' + p.tov + '</td><td>' + p.pf + '</td>' +
+      '<td>' + p.fgm + '-' + p.fga + '</td><td>' + p.tpm + '-' + p.tpa + '</td><td>' + p.ftm + '-' + p.fta + '</td>' +
+      '<td>' + fmtPct(p.fgm, p.fga) + '</td>' +
+      '<td class="' + pmClass(p.plusMinus) + '">' + pmText(p.plusMinus) + '</td></tr>';
+  });
+  var tt = teamTotals(tm);
+  html += '<tr class="tot"><td>TEAM</td><td></td><td>' + tt.pts + '</td><td>' + tt.reb + '</td><td>' + tt.ast +
+    '</td><td>' + tt.stl + '</td><td>' + tt.blk + '</td><td>' + tt.tov + '</td><td>' + tt.pf + '</td>' +
+    '<td>' + tt.fgm + '-' + tt.fga + '</td><td>' + tt.tpm + '-' + tt.tpa + '</td><td>' + tt.ftm + '-' + tt.fta +
+    '</td><td>' + fmtPct(tt.fgm, tt.fga) + '</td><td></td></tr>';
+  t.innerHTML = html;
+  return t;
+}
+
+/* --- team comparison bars --- */
+function cmpRow(label, hv, av, fmt, higherWins) {
+  if (higherWins === undefined) higherWins = true;
+  var hWin = higherWins ? hv >= av : hv <= av;
+  var aWin = higherWins ? av >= hv : av <= hv;
+  var mx = Math.max(Math.abs(hv), Math.abs(av), 1e-6);
+  function side(v, color, win, rev) {
+    return '<div class="cs27-cside' + (rev ? ' r' : '') + '"><span class="cs27-cval num' +
+      (win && hv !== av ? ' cs27-win' : '') + '">' + fmt(v) + '</span>' +
+      '<div class="cs27-cbar"><i style="width:' + (100 * Math.abs(v) / mx).toFixed(1) +
+      '%;background:' + color + '"></i></div></div>';
+  }
+  var row = el('div', 'cs27-crow');
+  row.innerHTML = side(hv, S.home.color, hWin, false) +
+    '<div class="lab">' + label + '</div>' + side(av, S.away.color, aWin, true);
+  return row;
+}
+
+function comparePanel() {
+  var wrap = el('div', 'cs27-cmp cs27');
+  var H = teamTotals(S.home), A = teamTotals(S.away);
+  var f1 = function (v) { return v.toFixed(1); }, fi = function (v) { return String(Math.round(v)); };
+  wrap.appendChild(cmpRow('POINTS', H.pts, A.pts, fi));
+  wrap.appendChild(cmpRow('FIELD GOAL %', pct(H.fgm, H.fga), pct(A.fgm, A.fga), f1));
+  wrap.appendChild(cmpRow('THREE POINT %', pct(H.tpm, H.tpa), pct(A.tpm, A.tpa), f1));
+  wrap.appendChild(cmpRow('FREE THROW %', pct(H.ftm, H.fta), pct(A.ftm, A.fta), f1));
+  wrap.appendChild(cmpRow('REBOUNDS', H.reb, A.reb, fi));
+  wrap.appendChild(cmpRow('ASSISTS', H.ast, A.ast, fi));
+  wrap.appendChild(cmpRow('STEALS', H.stl, A.stl, fi));
+  wrap.appendChild(cmpRow('BLOCKS', H.blk, A.blk, fi));
+  wrap.appendChild(cmpRow('TURNOVERS', H.tov, A.tov, fi, false));
+  wrap.appendChild(cmpRow('FOULS', H.pf, A.pf, fi, false));
+  wrap.appendChild(cmpRow('PTS IN PAINT', S.home.paintPts, S.away.paintPts, fi));
+  wrap.appendChild(cmpRow('FAST BREAK PTS', S.home.fastBreakPts, S.away.fastBreakPts, fi));
+  var note = el('div', 'cs27-note');
+  note.textContent = 'GOLD = LEADING · TURNOVERS & FOULS: LOWER WINS';
+  wrap.appendChild(note);
+  return wrap;
+}
+
+/* --- shot zone court (SVG half-court, paint / mid / three) --- */
+function zoneCourt(tm) {
+  // 300x280 half-court: paint rect, FT circle, three arc
+  var z = { paint: teamTotals(tm).paint, mid: teamTotals(tm).mid, three: teamTotals(tm).three };
+  function heat(m, a) {
+    if (!a) return '#101820';
+    var e = m / a, op = 0.25 + 0.65 * Math.min(1, a / 8);
+    var c = e >= 0.5 ? '62,220,120' : (e >= 0.38 ? '243,181,68' : '255,110,110');
+    return 'rgba(' + c + ',' + op.toFixed(2) + ')';
+  }
+  var svg =
+    '<svg viewBox="0 0 300 280" width="230" style="background:#0a0f15;border:1px solid #1e2836;border-radius:4px">' +
+    '<rect x="8" y="8" width="284" height="264" fill="none" stroke="#3a4a5c" stroke-width="2"/>' +
+    '<rect x="105" y="8" width="90" height="112" fill="' + heat(z.paint.m, z.paint.a) + '" stroke="#3a4a5c" stroke-width="1.5"/>' +
+    '<circle cx="150" cy="120" r="34" fill="none" stroke="#3a4a5c" stroke-width="1.5"/>' +
+    '<path d="M 30 8 L 30 130 A 130 130 0 0 0 270 130 L 270 8" fill="' + heat(z.mid.m, z.mid.a) + '" stroke="#3a4a5c" stroke-width="1.5" opacity="0.85"/>' +
+    '<path d="M 8 8 L 30 8 L 30 130 A 130 130 0 0 0 270 130 L 270 8 L 292 8 L 292 272 L 8 272 Z" fill="' + heat(z.three.m, z.three.a) + '" opacity="0.55"/>' +
+    '<circle cx="150" cy="36" r="9" fill="none" stroke="#f3b544" stroke-width="2"/>' +
+    '<text x="150" y="265" text-anchor="middle" fill="#5a6a7c" font-size="10" letter-spacing="3">SHOT ZONES</text></svg>';
+  var box = el('div', 'cs27-zone-team cs27');
+  box.innerHTML = '<h4 style="color:' + tm.color + '">' + esc(tm.abbr) + '</h4>' + svg +
+    '<div class="cs27-zrow">' +
+    zcell('PAINT', z.paint) + zcell('MID-RANGE', z.mid) + zcell('THREE', z.three) + '</div>';
+  return box;
+}
+function zcell(label, z) {
+  return '<div class="cs27-z"><span>' + label + '</span><b class="num">' + z.m + '/' + z.a +
+    '</b><em class="num">' + fmtPct(z.m, z.a) + '%</em></div>';
+}
+function zonesPanel() {
+  var wrap = el('div', 'cs27-zones');
+  wrap.appendChild(zoneCourt(S.home));
+  wrap.appendChild(zoneCourt(S.away));
+  return wrap;
+}
+
+/* --- lineups --- */
+function lineupsPanel() {
+  var wrap = el('div', 'cs27');
+  ['home', 'away'].forEach(function (side) {
+    var tm = T(side);
+    var t = el('table', 'cs27-table num');
+    var html = '<tr class="cs27-teamhead"><td colspan="5"><span class="dot" style="background:' +
+      tm.color + '"></span>' + esc(tm.abbr) + ' · 5-MAN UNITS</td></tr>' +
+      '<tr><th>LINEUP</th><th>MIN</th><th>+</th><th>−</th><th>NET</th></tr>';
+    var lus = Object.keys(tm.lineups).map(function (k) { return tm.lineups[k]; })
+      .sort(function (a, b) { return b.min - a.min; });
+    if (!lus.length) html += '<tr><td colspan="5" style="text-align:center;color:#5a6a7c">No lineup data yet — set via CourtsideStats.setLineup()</td></tr>';
+    lus.forEach(function (lu, i) {
+      var net = lu.plus - lu.minus;
+      var short = lu.names.map(function (n) { return esc(n.split(' ').pop()); }).join(' · ');
+      html += '<tr' + (i % 2 ? '' : ' class="hl"') + '><td class="cs27-lu" style="text-align:left">' + short +
+        '</td><td>' + fmtClock(lu.min) + '</td><td>' + lu.plus + '</td><td>' + lu.minus +
+        '</td><td class="' + pmClass(net) + '"><b>' + pmText(net) + '</b></td></tr>';
+    });
+    var cur = el('div', 'cs27-note');
+    cur.textContent = 'ON FLOOR NOW: ' + (tm.lineup.length ? tm.lineup.map(function (n) { return n.split(' ').pop(); }).join(' · ').toUpperCase() : '—');
+    t.innerHTML = html;
+    wrap.appendChild(t);
+    wrap.appendChild(cur);
+  });
+  return wrap;
+}
+
+/* --- dashboard shell --- */
+var dashEls = {};
+function buildDashboard() {
+  injectCSS();
+  var root = el('div', 'cs27');
+  root.id = 'cs27-dash';
+  var card = el('div', 'cs27-card');
+  var head = el('div', 'cs27-head');
+  head.innerHTML = '<h2>COACH\'S <b>DASHBOARD</b></h2>' +
+    '<div class="cs27-score num"><span id="cs27-dh" style="color:' + S.home.color + '"></span> <span style="color:#5a6a7c">·</span> <span id="cs27-da" style="color:' + S.away.color + '"></span></div>';
+  var close = el('button', 'cs27-close', 'CLOSE&nbsp;&nbsp;[S]');
+  close.onclick = API.toggleDashboard;
+  head.appendChild(close);
+  var tabs = el('div', 'cs27-tabs');
+  var body = el('div', 'cs27-body');
+  var panes = {};
+  [['box', 'BOX SCORE'], ['teams', 'TEAM STATS'], ['zones', 'SHOT ZONES'], ['lineups', 'LINEUPS']].forEach(function (td) {
+    var b = el('button', 'cs27-tab' + (td[0] === 'box' ? ' on' : ''), td[1]);
+    b.onclick = function () { API.showPanel(td[0]); };
+    tabs.appendChild(b);
+    panes[td[0]] = b;
+  });
+  card.appendChild(head); card.appendChild(tabs); card.appendChild(body);
+  root.appendChild(card);
+  document.body.appendChild(root);
+  dashEls = { root: root, body: body, panes: panes, panel: 'box' };
+  root.addEventListener('click', function (e) { if (e.target === root) API.toggleDashboard(); });
+}
+
+function renderPanel() {
+  if (!dashEls.body) return;
+  stampFloorTime();
+  dashEls.body.innerHTML = '';
+  var p = dashEls.panel, node;
+  if (p === 'box') {
+    node = el('div', 'cs27');
+    node.appendChild(boxTable(S.home));
+    node.appendChild(document.createElement('br'));
+    node.appendChild(boxTable(S.away));
+  }
+  else if (p === 'teams') node = comparePanel();
+  else if (p === 'zones') node = zonesPanel()
