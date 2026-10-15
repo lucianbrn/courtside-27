@@ -1,0 +1,80 @@
+ if (window.BD) {
+      BD.onShotResult({ kind: typ, made: made, points: pts, team: team, handler: hIdx });
+      if (made) { try { BD.trackStat(team, hIdx, 'pts', pts); } catch(e){} }
+    }
+    if (_cpuCoach) {
+      try { _cpuCoach.onShotResolved({ team: team, points: pts, kind: typ, made: made, handler: hIdx, dist: 0, t: gameSeconds }); } catch(e){}
+    }
+  } catch(e){ console.warn('[coach] shot hook', e); }
+}
+
+/* ---- timeout fan-out ---- */
+function coachOnTimeout(side){
+  if (!coachMode) return;
+  try { if (window.Momentum) Momentum.onTimeout(); } catch(e){}
+  try { if (window.BD) BD.onTimeout(side); } catch(e){}
+  try {
+    if (window.Commentary) {
+      const tn = (side === 'user') ? chosenTeam('user').name : chosenTeam('cpu').name;
+      Commentary.onTimeout(tn, side === 'user' ? 'strategic' : 'run');
+    }
+  } catch(e){}
+}
+
+/* ---- substitution fan-out (user side) ---- */
+function coachOnSub(outName, inName){
+  if (!coachMode) return;
+  try { if (window.Commentary) Commentary.onSub(inName, outName, chosenTeam('user').name); } catch(e){}
+  try {
+    if (window.CourtsideStats) {
+      CourtsideStats.substitution({ team:'home', out: outName, in: inName });
+      CourtsideStats.setLineup('home', playerTeam.map((p,i)=>p.userData.roster?p.userData.roster.name:rosterFor('user',i).name));
+    }
+  } catch(e){}
+}
+
+/* ---- possession change fan-out ---- */
+function coachOnPossession(team){
+  if (!coachMode) return;
+  try { if (window.CoachClipboard) CoachClipboard.onPossession(); } catch(e){}
+  try { if (window.BD) BD.onPossessionChange(team); } catch(e){}
+  try { if (_cpuCoach) _cpuCoach.onPossessionStart(team); } catch(e){}
+}
+
+/* ---- play call fan-out ---- */
+function coachOnPlayCall(play){
+  if (!coachMode) return;
+  try { if (window.PlayVisuals) PlayVisuals.showPlayArt(play); } catch(e){}
+  try { if (_cpuCoach) _cpuCoach.onPlayCall(play); } catch(e){}
+}
+
+/* ---- quarter / halftime / game-end ---- */
+function coachOnQuarterTick(){
+  if (!coachMode) return;
+  if (gameQuarter === _lastQuarterSeen) return;
+  const prev = _lastQuarterSeen;
+  _lastQuarterSeen = gameQuarter;
+  try { if (window.BD) BD.onQuarter(gameQuarter); } catch(e){}
+  try { if (window.Commentary) Commentary.onQuarterStart(gameQuarter); } catch(e){}
+  try { if (window.CourtsideStats) CourtsideStats.endQuarter(prev); } catch(e){}
+  if (prev === 2 && gameQuarter === 3) {
+    try { if (window.BD) BD.onHalftime(); } catch(e){}
+    try { if (window.Commentary) Commentary.onHalftime(); } catch(e){}
+    try { if (_cpuCoach) _cpuCoach.onHalftime(); } catch(e){}
+  }
+}
+
+/* ---- throttled clipboard sync for updateUI ---- */
+function coachSyncThrottled(){
+  if (!coachMode) return;
+  const now = performance.now();
+  if (now - _ccSyncAt < 250) return;
+  _ccSyncAt = now;
+  try { if (window.CoachClipboard) CoachClipboard.sync(); } catch(e){}
+}
+
+
+
+try{setup();requestAnimationFrame(frame)}catch(err){$('loading').innerHTML=`<strong>GAME ENGINE ERROR</strong><span>${String(err)}<br>Try updating Chrome or Edge and enabling hardware acceleration.</span>`;console.error(err)}
+</script>
+</body></html>
