@@ -1,0 +1,1915 @@
+;
+  else node = lineupsPanel();
+  dashEls.body.appendChild(node);
+  Object.keys(dashEls.panes).forEach(function (k) {
+    dashEls.panes[k].classList.toggle('on', k === p);
+  });
+  var H = teamTotals(S.home), A = teamTotals(S.away);
+  var dh = document.getElementById('cs27-dh'), da = document.getElementById('cs27-da');
+  if (dh) dh.textContent = S.home.abbr + ' ' + H.pts;
+  if (da) da.textContent = A.pts + ' ' + S.away.abbr;
+}
+
+/* --- floating mini box score --- */
+function buildBox() {
+  var b = el('div', 'cs27');
+  b.id = 'cs27-box';
+  document.body.appendChild(b);
+  dashEls.box = b;
+}
+function renderBox() {
+  if (!dashEls.box) return;
+  stampFloorTime();
+  dashEls.box.innerHTML = '';
+  dashEls.box.appendChild(boxTable(S.home));
+  dashEls.box.appendChild(boxTable(S.away));
+}
+
+/* --- control buttons --- */
+function buildFab() {
+  var fab = el('div', 'cs27-fab cs27');
+  var b1 = el('button', 'cs27-btn', 'BOX SCORE');
+  b1.onclick = API.toggleBox;
+  var b2 = el('button', 'cs27-btn', 'DASHBOARD&nbsp;[S]');
+  b2.onclick = API.toggleDashboard;
+  fab.appendChild(b1); fab.appendChild(b2);
+  document.body.appendChild(fab);
+}
+
+/* ============================================================
+   BROADCAST GRAPHICS ENGINE
+   ============================================================ */
+var alertQueue = [], alertShowing = false, alertTimer = null;
+
+function broadcast(title, sub, color, kicker) {
+  alertQueue.push({ title: title, sub: sub || '', color: color || '#f3b544', kicker: kicker || 'STAT ALERT' });
+  pumpAlerts();
+}
+function pumpAlerts() {
+  if (alertShowing || !alertQueue.length) return;
+  var a = alertQueue.shift();
+  var n = document.getElementById('cs27-alert');
+  if (!n) {
+    n = el('div', 'cs27');
+    n.id = 'cs27-alert';
+    n.innerHTML = '<div class="k"></div><div class="t num"></div><div class="s"></div>';
+    document.body.appendChild(n);
+  }
+  n.style.borderLeftColor = a.color;
+  n.querySelector('.k').textContent = a.kicker;
+  n.querySelector('.k').style.color = a.color;
+  n.querySelector('.t').textContent = a.title;
+  n.querySelector('.s').textContent = a.sub;
+  alertShowing = true;
+  requestAnimationFrame(function () { n.classList.add('show'); });
+  clearTimeout(alertTimer);
+  alertTimer = setTimeout(function () {
+    n.classList.remove('show');
+    setTimeout(function () { alertShowing = false; pumpAlerts(); }, 500);
+  }, 4200);
+}
+
+/* ============================================================
+   INIT + PUBLIC API
+   ============================================================ */
+function initState(cfg) {
+  S = {
+    _cfg: cfg,
+    home: blankTeam(cfg.home),
+    away: blankTeam(cfg.away),
+    quarter: 1,
+    started: now()
+  };
+  // attach rebound helpers
+  [S.home, S.away].forEach(function (tm) {
+    Object.keys(tm.players).forEach(function (k) { withHelpers(tm.players[k]); });
+  });
+}
+
+// ensurePlayer must attach the reb() helper (defined in chunk 2)
+var _ensurePlayer = ensurePlayer;
+ensurePlayer = function (team, name) {
+  return withHelpers(_ensurePlayer(team, name));
+};
+
+API.init = function (cfg) {
+  injectCSS();
+  initState(cfg);
+  buildDashboard();
+  buildBox();
+  buildFab();
+  // default lineups = first five roster names per team
+  API.setLineup('home', S.home.order.slice(0, 5));
+  API.setLineup('away', S.away.order.slice(0, 5));
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 's' || e.key === 'S') {
+      if (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+      API.toggleDashboard();
+    }
+    if (e.key === 'b' || e.key === 'B') {
+      if (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+      API.toggleBox();
+    }
+  });
+  API.renderAll();
+  return API;
+};
+
+API.toggleDashboard = function () {
+  if (!S) return;
+  dashEls.root.classList.toggle('open');
+  if (dashEls.root.classList.contains('open')) renderPanel();
+};
+
+API.showPanel = function (name) {
+  if (!S) return;
+  dashEls.panel = name;
+  if (!dashEls.root.classList.contains('open')) dashEls.root.classList.add('open');
+  renderPanel();
+};
+
+API.toggleBox = function () {
+  if (!S) return;
+  dashEls.box.classList.toggle('open');
+  if (dashEls.box.classList.contains('open')) renderBox();
+};
+
+API.render = function () {
+  // light refresh: only re-render visible surfaces
+  if (dashEls.root && dashEls.root.classList.contains('open')) renderPanel();
+  if (dashEls.box && dashEls.box.classList.contains('open')) renderBox();
+};
+API.renderAll = function () { renderPanel(); renderBox(); };
+
+API.graphic = function (title, sub, color) { broadcast(title, sub, color || '#f3b544', 'COURTSIDE 27'); };
+
+// expose read-only snapshots for custom integrations
+API.snapshot = function () {
+  if (!S) return null;
+  stampFloorTime();
+  return {
+    home: { abbr: S.home.abbr, totals: teamTotals(S.home) },
+    away: { abbr: S.away.abbr, totals: teamTotals(S.away) },
+    quarter: S.quarter
+  };
+};
+
+/* ============================================================
+   DEMO MODE — preview the overlay without a live game
+   ============================================================ */
+function demoPlayer(tm, name, line) {
+  // line: [pts,fgm,fga,tpm,tpa,ftm,fta,oreb,dreb,ast,stl,blk,tov,pf,pm]
+  var p = ensurePlayer(T(tm), name);
+  var z;
+  p.pts = line[0]; p.fgm = line[1]; p.fga = line[2]; p.tpm = line[3]; p.tpa = line[4];
+  p.ftm = line[5]; p.fta = line[6]; p.oreb = line[7]; p.dreb = line[8];
+  p.ast = line[9]; p.stl = line[10]; p.blk = line[11]; p.tov = line[12]; p.pf = line[13];
+  p.plusMinus = line[14]; p.min = 720 + Math.floor(Math.random() * 600);
+  // distribute FG across zones plausibly
+  var paintA = Math.round(p.fga * 0.45), threeA = p.tpa, midA = p.fga - paintA - threeA;
+  p.zones.paint.a = paintA; p.zones.paint.m = Math.min(paintA, Math.round(p.fgm * 0.55));
+  p.zones.three.a = threeA; p.zones.three.m = p.tpm;
+  p.zones.mid.a = Math.max(0, midA); p.zones.mid.m = Math.max(0, p.fgm - p.zones.paint.m - p.tpm);
+  T(tm).paintPts += p.zones.paint.m * 2;
+  return p;
+}
+
+API.demo = function () {
+  API.init({
+    home: { abbr: 'BOS', name: 'BOSTON CELTICS', color: '#008348', roster: [
+      { name: 'Rajon Rondo', number: 9, pos: 'PG' }, { name: 'Ray Allen', number: 20, pos: 'SG' },
+      { name: 'Paul Pierce', number: 34, pos: 'SF' }, { name: 'Kevin Garnett', number: 5, pos: 'PF' },
+      { name: 'Kendrick Perkins', number: 43, pos: 'C' } ] },
+    away: { abbr: 'MIA', name: 'MIAMI HEAT', color: '#98002e', roster: [
+      { name: 'Mario Chalmers', number: 6, pos: 'PG' }, { name: 'Dwyane Wade', number: 3, pos: 'SG' },
+      { name: 'Quentin Richardson', number: 5, pos: 'SF' }, { name: 'Michael Beasley', number: 30, pos: 'PF' },
+      { name: 'Jermaine O’Neal', number: 7, pos: 'C' } ] }
+  });
+  var H = [['Rajon Rondo', 8, 3, 9, 1, 3, 1, 2, 1, 3, 9, 2, 0, 2, 1, 7],
+           ['Ray Allen', 17, 6, 12, 3, 7, 2, 2, 0, 4, 2, 1, 0, 1, 2, 5],
+           ['Paul Pierce', 21, 7, 15, 2, 5, 5, 6, 1, 5, 4, 1, 1, 2, 3, 9],
+           ['Kevin Garnett', 14, 6, 11, 0, 1, 2, 2, 3, 9, 3, 1, 2, 1, 4, 11],
+           ['Kendrick Perkins', 6, 3, 5, 0, 0, 0, 0, 2, 6, 0, 0, 1, 0, 5, 4]];
+  var A = [['Mario Chalmers', 9, 3, 8, 2, 5, 1, 2, 0, 2, 5, 1, 0, 3, 2, -6],
+           ['Dwyane Wade', 30, 12, 18, 1, 4, 5, 6, 1, 4, 4, 3, 1, 2, 2, -4],
+           ['Quentin Richardson', 5, 2, 7, 1, 4, 0, 0, 0, 3, 1, 0, 0, 1, 1, -8],
+           ['Michael Beasley', 12, 5, 10, 0, 2, 2, 2, 2, 5, 2, 0, 0, 2, 3, -7],
+           ['Jermaine O’Neal', 8, 4, 9, 0, 0, 0, 0, 1, 7, 1, 0, 2, 1, 2, -9]];
+  H.forEach(function (l) { demoPlayer('home', l[0], l.slice(1)); });
+  A.forEach(function (l) { demoPlayer('away', l[0], l.slice(1)); });
+  S.home.fastBreakPts = 14; S.away.fastBreakPts = 9;
+  API.setLineup('home', ['Rajon Rondo', 'Ray Allen', 'Paul Pierce', 'Kevin Garnett', 'Kendrick Perkins']);
+  API.setLineup('away', ['Mario Chalmers', 'Dwyane Wade', 'Quentin Richardson', 'Michael Beasley', 'Jermaine O’Neal']);
+  var k1 = lineupKey(S.home.lineup); S.home.lineups[k1].plus = 34; S.home.lineups[k1].minus = 22;
+  var k2 = lineupKey(S.away.lineup); S.away.lineups[k2].plus = 22; S.away.lineups[k2].minus = 34;
+  API.renderAll();
+  API.toggleDashboard();
+  setTimeout(function () { broadcast('WADE: 30 PTS', '12-18 FG · 4 AST · 3 STL', '#98002e', 'STAR WATCH'); }, 800);
+  setTimeout(function () { broadcast('CELTICS: 12-0 RUN', 'Pierce heating up · timeout Heat', '#008348', 'SCORING RUN'); }, 6000);
+  return API;
+};
+
+window.CourtsideStats = API;
+})();
+
+
+
+/* ===== INLINED: cpu-coach-ai.js ===== */
+/* ============================================================================
+ * CPU COACH AI — Courtside 27
+ * ----------------------------------------------------------------------------
+ * A strategic opponent coach that plays "figurative chess" against the user.
+ * It watches what you run, recognizes patterns, and counters — then tells
+ * you what it's doing so the chess match is visible.
+ *
+ * DESIGN PHILOSOPHY
+ *  - Every decision traces to observed data, never a raw coin flip.
+ *  - Personality (grinder vs. blur) biases thresholds and scheme preferences.
+ *  - Human-like imperfection: occasional stubbornness, delayed reactions.
+ *  - All announcements go through api.announce() so the user SEES the counter.
+ *
+ * INTEGRATION
+ *  const coach = new CPUCoach(gameAPI, { personality: 'grinder' });
+ *  coach.onGameStart();
+ *  // each frame: coach.update(dt);
+ *  // on events: coach.onPossessionStart(team); coach.onShotResolved(info);
+ *  // at half:   coach.onHalftime();
+ *
+ * The gameAPI adapter is documented at the bottom of this file.
+ * ========================================================================== */
+
+class CPUCoach {
+  constructor(api, options = {}) {
+    this.api = api;
+
+    // ---- Personality -------------------------------------------------------
+    // 'grinder' (Pat Riley): half-court, protect paint, slow pace, patient.
+    // 'blur'    (Mike D'Antoni): pressure, fast pace, trap, live with chaos.
+    // If not specified, pick from the CPU team's identity (passed via options
+    // or derived from api). Falls back to a coin flip with a paper trail.
+    this.personality = options.personality || this._draftPersonality();
+    this.P = CPUCoach.PERSONALITIES[this.personality];
+
+    // ---- Internal state ----------------------------------------------------
+    this.timeoutsLeft = 7;
+    this.scheme = 'man';              // current defensive scheme
+    this.schemeCooldown = 0;          // seconds before scheme may change again
+    this.timeoutCooldown = 0;
+    this.subCooldown = 0;
+    this.lastRunCheck = { user: 0, cpu: 0 };
+    this.halftimeDone = false;
+    this.gameStarted = false;
+
+    // ---- Pattern memory (sliding windows) ----------------------------------
+    this.playHistory = [];            // {play:'pick-roll'|'isolation'|'motion', t}
+    this.shotHistory = [];            // {team, points:2|3, kind, made, handler, dist, t}
+    this.userRun = 0;                 // current unanswered user scoring run
+    this.cpuRun = 0;
+    this.lastUserScore = 0;
+    this.lastCpuScore = 0;
+
+    // ---- Per-half aggregates -----------------------------------------------
+    this.half = this._freshHalf();
+
+    // ---- Rotation ----------------------------------------------------------
+    this.cpuMinutes = [0, 0, 0, 0, 0]; // crude minutes tracker per starter slot
+    this.hotHand = { idx: -1, points: 0, windowStart: 0 };
+
+    // ---- Late game ----------------------------------------------------------
+    this.foulStrategyArmed = false;
+    this.lastShotHeld = false;
+
+    // ---- Narrative ----------------------------------------------------------
+    this.announced = new Set();        // dedupe one-time announcements
+  }
+
+  /* ========================================================================
+   * PERSONALITY
+   * ====================================================================== */
+  static PERSONALITIES = {
+    grinder: {
+      label: 'GRINDER',
+      coachName: 'RILEY',
+      // thresholds
+      runTimeoutAt: 8,          // call TO when user run hits this
+      hedgeAfterPnR: 3,         // hedge after N pick-rolls in window
+      trapStarAfter: 12,        // trap after star scores N in a quarter-ish
+      zoneAfterThrees: 4,       // zone after N made threes in window
+      doublePostAfter: 3,       // double the post after N post touches
+      fatigueSubAt: 32,         // sub when stamina below this
+      foulTroubleAt: 4,         // protective sub at this many fouls (early)
+      // biases
+      prefersZone: true,
+      prefersTrap: false,
+      pace: 'slow',
+      pressLikelihood: 0.15,
+      stubbornness: 0.22,       // chance to ignore a counter-signal once
+      adjustmentDelay: 2,       // extra possessions before reacting
+    },
+    blur: {
+      label: 'BLUR',
+      coachName: 'DANTONI',
+      runTimeoutAt: 10,
+      hedgeAfterPnR: 2,
+      trapStarAfter: 10,
+      zoneAfterThrees: 5,
+      doublePostAfter: 4,
+      fatigueSubAt: 26,
+      foulTroubleAt: 5,
+      prefersZone: false,
+      prefersTrap: true,
+      pace: 'fast',
+      pressLikelihood: 0.65,
+      stubbornness: 0.10,
+      adjustmentDelay: 0,
+    },
+  };
+
+  _draftPersonality() {
+    // Derive from CPU team identity if the api exposes it; otherwise flip.
+    try {
+      const id = (this.api.getCpuTeamId && this.api.getCpuTeamId() || '').toLowerCase();
+      if (/heat|celtics|spurs|bulls/.test(id)) return 'grinder';
+      if (/warriors|suns|nuggets/.test(id)) return 'blur';
+    } catch (e) { /* fall through */ }
+    return Math.random() < 0.5 ? 'grinder' : 'blur';
+  }
+
+  _freshHalf() {
+    return {
+      userThreesAttempted: 0, userThreesMade: 0,
+      userPaintPoints: 0, userMidPoints: 0,
+      userPnR: 0, userIso: 0, userPostTouches: 0,
+      userTurnovers: 0,
+      cpuThreesAttempted: 0, cpuThreesMade: 0,
+      startTime: 0,
+    };
+  }
+
+  /* ========================================================================
+   * LIFECYCLE
+   * ====================================================================== */
+  onGameStart() {
+    this.gameStarted = true;
+    this.timeoutsLeft = 7;
+    this.scheme = 'man';
+    this.half = this._freshHalf();
+    this.api.announce(
+      `${this.P.coachName} BALL`,
+      `CPU playing ${this.P.label} style — ${this.P.pace==='slow' ? 'half-court grind, paint protection' : 'pace, pressure, controlled chaos'}.`
+    );
+    this.api.applyDefensiveScheme('man', { silent: true });
+    this.api.setCpuTempo(this.P.pace);
+  }
+
+  update(dt) {
+    if (!this.gameStarted || this.api.isGameOver()) return;
+    this.schemeCooldown = Math.max(0, this.schemeCooldown - dt);
+    this.timeoutCooldown = Math.max(0, this.timeoutCooldown - dt);
+    this.subCooldown = Math.max(0, this.subCooldown - dt);
+
+    this._trackRuns();
+    this._recognizePatterns();
+    this._updateDefense();
+    this._manageTimeouts();
+    this._manageRotation(dt);
+    this._manageLateGame();
+  }
+
+  onPossessionStart(team) {
+    // Called by the host game whenever possession changes.
+    this._pruneHistories();
+    if (team === 'user') {
+      const recent = this.playHistory.slice(-1)[0];
+      if (recent) this._notePlayUsage(recent.play);
+    }
+    // Late-game: decide whether to hold for last shot BEFORE the possession.
+    this._considerLastShotHold(team);
+  }
+
+  onPlayCall(play) {
+    // Host game calls this when the USER changes their offensive set.
+    this.playHistory.push({ play, t: this.api.getGameSeconds() });
+    if (this.playHistory.length > 40) this.playHistory.shift();
+  }
+
+  onShotResolved(info) {
+    // info: {team:'user'|'cpu', points:2|3, kind:'LAYUP'|'JUMPER', made:bool,
+    //        handler:int, dist:number}
+    this.shotHistory.push({ ...info, t: this.api.getGameSeconds() });
+    if (this.shotHistory.length > 60) this.shotHistory.shift();
+
+    if (info.team === 'user') {
+      if (info.points === 3) {
+        this.half.userThreesAttempted++;
+        if (info.made) this.half.userThreesMade++;
+      } else if (info.kind === 'LAYUP' || info.dist < 3.4) {
+        if (info.made) this.half.userPaintPoints += info.points;
+      } else {
+        if (info.made) this.half.userMidPoints += info.points;
+      }
+      // Hot-hand tracking for the USER's players (so CPU can key on them).
+      if (info.made) this._noteUserScorer(info.handler, info.points);
+    } else {
+      if (info.points === 3) {
+        this.half.cpuThreesAttempted++;
+        if (info.made) this.half.cpuThreesMade++;
+      }
+      if (info.made) this._noteCpuScorer(info.handler, info.points);
+    }
+  }
+
+  onPostTouch(playerIdx) {
+    this.half.userPostTouches++;
+    this._postTouchLog = this._postTouchLog || [];
+    this._postTouchLog.push({ idx: playerIdx, t: this.api.getGameSeconds() });
+  }
+
+  onHalftime() {
+    if (this.halftimeDone) return;
+    this.halftimeDone = true;
+    this._applyHalftimeAdjustments();
+    this.half = this._freshHalf(); // reset for second half
+  }
+
+  /* ========================================================================
+   * PATTERN RECOGNITION
+   * ====================================================================== */
+  _pruneHistories() {
+    // Keep roughly the last ~4 minutes of game time in the window.
+    const cutoff = this.api.getGameSeconds() - 240;
+    this.playHistory = this.playHistory.filter(p => p.t > cutoff);
+    this.shotHistory = this.shotHistory.filter(s => s.t > cutoff);
+  }
+
+  _countPlays(play, windowN = 12) {
+    const w = this.playHistory.slice(-windowN);
+    return w.filter(p => p.play === play).length;
+  }
+
+  _recognizePatterns() {
+    const p = this.patterns = {
+      pnrRate: this._countPlays('pick-roll'),
+      isoRate: this._countPlays('isolation'),
+      threeRate: this.shotHistory.filter(s => s.team === 'user' && s.points === 3).length,
+      threeMakes: this.shotHistory.filter(s => s.team === 'user' && s.points === 3 && s.made).length,
+      paintTouches: (this._postTouchLog || []).length,
+      userStarIdx: this._userStarIdx,
+      userStarPts: this._userStarPts || 0,
+    };
+    return p;
+  }
+
+  _notePlayUsage(play) {
+    if (play === 'pick-roll') this.half.userPnR++;
+    if (play === 'isolation') this.half.userIso++;
+  }
+
+  _noteUserScorer(idx, pts) {
+    this._userScores = this._userScores || {};
+    this._userScores[idx] = (this._userScores[idx] || 0) + pts;
+    // Recompute star.
+    let best = -1, bestPts = 0;
+    for (const [k, v] of Object.entries(this._userScores)) {
+      if (v > bestPts) { bestPts = v; best = +k; }
+    }
+    this._userStarIdx = best;
+    this._userStarPts = bestPts;
+  }
+
+  _noteCpuScorer(idx, pts) {
+    // Hot hand: who is cooking for the CPU right now.
+    const now = this.api.getGameSeconds();
+    if (now - this.hotHand.windowStart > 180 || this.hotHand.idx === -1) {
+      this.hotHand = { idx, points: pts, windowStart: now };
+    } else if (this.hotHand.idx === idx) {
+      this.hotHand.points += pts;
+    } else {
+      // Someone else scored; only dethrone after a clear gap.
+      this._challenger = this._challenger || {};
+      this._challenger[idx] = (this._challenger[idx] || 0) + pts;
+      if (this._challenger[idx] > this.hotHand.points + 6) {
+        this.hotHand = { idx, points: this._challenger[idx], windowStart: now };
+        this._challenger = {};
+      }
+    }
+  }
+
+  _trackRuns() {
+    const su = this.api.getScoreUser(), sc = this.api.getScoreCPU();
+    if (su > this.lastUserScore) {           // user scored
+      this.userRun += (su - this.lastUserScore);
+      this.cpuRun = 0;
+    } else if (sc > this.lastCpuScore) {     // cpu scored
+      this.cpuRun += (sc - this.lastCpuScore);
+      this.userRun = 0;
+    }
+    // A defensive stop resets the bleeding slowly (prevents stale triggers).
+    this.lastUserScore = su;
+    this.lastCpuScore = sc;
+  }
+
+  /* ========================================================================
+   * ADAPTIVE DEFENSE — the chess match
+   * ====================================================================== */
+  _updateDefense() {
+    if (this.schemeCooldown > 0 || this.api.isPaused()) return;
+    const p = this.patterns || this._recognizePatterns();
+    const P = this.P;
+
+    // Priority order: most exploitable pattern first.
+    const candidates = [];
+
+    // 1. Pick & roll spam -> hedge hard, then trap if it persists.
+    if (p.pnrRate >= P.hedgeAfterPnR + P.adjustmentDelay) {
+      candidates.push({
+        scheme: p.pnrRate >= P.hedgeAfterPnR + 3 ? 'trap-pnr' : 'hedge',
+        reason: `Hedging the pick & roll — you've run it ${p.pnrRate} times lately.`,
+        weight: 3 + p.pnrRate,
+      });
+    }
+
+    // 2. Three-point barrage -> zone or run-them-off.
+    if (p.threeMakes >= P.zoneAfterThrees) {
+      candidates.push({
+        scheme: P.prefersZone ? 'zone-2-3' : 'chase',
+        reason: `Adjusting to the three-ball — ${p.threeMakes} made threes in the window. ${P.prefersZone ? 'Dropping into zone.' : 'Running shooters off the line.'}`,
+        weight: 3 + p.threeMakes,
+      });
+    }
+
+    // 3. Star player cooking -> trap / box-and-one energy.
+    if (p.userStarPts >= P.trapStarAfter && p.userStarIdx >= 0) {
+      const name = this._userPlayerName(p.userStarIdx);
+      candidates.push({
+        scheme: 'trap-star',
+        reason: `Sending help at ${name} — ${p.userStarPts} points won't go unanswered.`,
+        weight: 2 + p.userStarPts / 6,
+        starIdx: p.userStarIdx,
+      });
+    }
+
+    // 4. Post-up spam -> double the post.
+    if (p.paintTouches >= P.doublePostAfter + P.adjustmentDelay) {
+      candidates.push({
+        scheme: 'double-post',
+        reason: `Doubling the post — ${p.paintTouches} paint touches is too many.`,
+        weight: 2 + p.paintTouches,
+      });
+    }
+
+    // 5. Isolation heavy -> load up strong side, invite the drive into help.
+    if (p.isoRate >= 5) {
+      candidates.push({
+        scheme: 'shade-iso',
+        reason: `Loading up on isolation — make someone else beat us.`,
+        weight: 1.5 + p.isoRate / 2,
+      });
+    }
+
+    if (!candidates.length) {
+      // Nothing exploitable: drift back to base man, quietly.
+      if (this.scheme !== 'man' && this._patternGoneCold()) {
+        this._setDefensiveScheme('man', 'Back to base man — the wrinkle is handled.', true);
+      }
+      return;
+    }
+
+    candidates.sort((a, b) => b.weight - a.weight);
+    const pick = candidates[0];
+    if (pick.scheme === this.scheme) return;
+
+    // Human imperfection: stubbornness — occasionally ignore the signal once.
+    if (Math.random() < P.stubbornness && !pick.forced) {
+      this._stubbornNote = pick;      // remember; will act next window
+      this.schemeCooldown = 6;
+      return;
+    }
+    // If we were stubborn last window about THIS, do it now (delayed reaction).
+    const finalPick = (this._stubbornNote && this._stubbornNote.scheme === pick.scheme)
+      ? { ...pick, reason: pick.reason + ' (Took a possession to get there.)' }
+      : pick;
+    this._stubbornNote = null;
+
+    this._setDefensiveScheme(finalPick.scheme, finalPick.reason, false, finalPick);
+  }
+
+  _patternGoneCold() {
+    // The exploited pattern hasn't shown up in the last several plays.
+    const recent = this.playHistory.slice(-6);
+    if (!recent.length) return true;
+    const p = this.patterns || {};
+    if (this.scheme === 'hedge' || this.scheme === 'trap-pnr')
+      return !recent.some(r => r.play === 'pick-roll');
+    if (this.scheme === 'zone-2-3' || this.scheme === 'chase')
+      return (p.threeRate || 0) < 2;
+    return recent.length >= 6;
+  }
+
+  _setDefensiveScheme(scheme, reason, silent = false, extra = {}) {
+    this.scheme = scheme;
+    this.schemeCooldown = 14; // ~2 possessions before another shift
+    this.api.applyDefensiveScheme(scheme, { starIdx: extra.starIdx, silent: true });
+    if (!silent) {
+      const teamName = this.api.getCpuTeamName();
+      this.api.announce(
+        `${teamName.toUpperCase()} ADJUSTMENT`,
+        reason,
+        'defense'
+      );
+    }
+  }
+
+  _userPlayerName(idx) {
+    try {
+      const r = this.api.rosterFor('user', idx);
+      return r.name || `Player ${idx + 1}`;
+    } catch (e) { return `Player ${idx + 1}`; }
+  }
+
+  /* ========================================================================
+   * TIMEOUT INTELLIGENCE
+   * ====================================================================== */
+  _manageTimeouts() {
+    if (this.timeoutCooldown > 0 || this.timeoutsLeft <= 0) return;
+    if (this.api.isPaused() || this.api.isGameOver()) return;
+    const diff = this.api.getScoreCPU() - this.api.getScoreUser(); // + means CPU leads
+
+    // 1. Stop the bleeding: user on a run.
+    if (this.userRun >= this.P.runTimeoutAt && diff < 12) {
+      return this._callTimeout(
+        'STOP THE RUN',
+        `User run at ${this.userRun}-0. ${this.P.coachName} wants to talk it over.`
+      );
+    }
+
+    // 2. Before the user's final possession (close game, user ball, <30s).
+    const quarter = this.api.getGameQuarter();
+    const qRem = this._qRemaining();
+    if (quarter === 4 && qRem < 32 && qRem > 4 &&
+        Math.abs(diff) <= 6 && this.api.getBallTeam() === 'user' &&
+        !this._finalPossessionTOUsed) {
+      this._finalPossessionTOUsed = true;
+      return this._callTimeout(
+        'SET THE DEFENSE',
+        'Final possession coming — getting the right five on the floor.'
+      );
+    }
+
+    // 3. Ice the free-throw shooter (clutch FTs, game on the line).
+    if (this.api.isUserShootingFT() && quarter === 4 && qRem < 60 &&
+        Math.abs(diff) <= 4 && Math.random() < 0.6) {
+      return this._callTimeout('ICE', 'Icing the shooter. Let him think about it.');
+    }
+
+    // 4. Protect a late lead: slow the game down, sub defense in.
+    if (quarter === 4 && qRem < 90 && diff >= 8 && diff <= 14) {
+      return this._callTimeout(
+        'CLOSE IT OUT',
+        'Up ' + diff + ' — shortening the game, no silly fouls.'
+      );
+    }
+
+    // 5. Never waste: don't call when CPU is rolling or game is decided.
+    // (Implicit — none of the above fired.)
+  }
+
+  _callTimeout(title, detail) {
+    this.timeoutsLeft--;
+    this.timeoutCooldown = 20;
+    this.userRun = 0; // reset run tracking after the stoppage
+    this.api.cpuCallTimeout(title, detail, this.timeoutsLeft);
+  }
+
+  /* ========================================================================
+   * ROTATION MANAGEMENT
+   * ====================================================================== */
+  _manageRotation(dt) {
+    if (this.subCooldown > 0 || this.api.isPaused()) return;
+    const cpu = this.api.getCpuTeam();
+    if (!cpu || !cpu.length) return;
+
+    for (let i = 0; i < cpu.length; i++) {
+      const p = cpu[i].userData;
+      if (!p || p.fouledOut) continue;
+
+      // 1. Fatigue: legs are gone.
+      if (this.api.isFatigueOn() && p.stamina < this.P.fatigueSubAt && this._benchAvailable()) {
+        return this._substitute(i, `${this._cpuPlayerName(i)} is gassed (${Math.round(p.stamina)}%). Fresh legs in.`);
+      }
+
+      // 2. Foul trouble: protect the starter.
+      const foulLimit = this.api.getGameQuarter() <= 2 ? this.P.foulTroubleAt : this.P.foulTroubleAt + 1;
+      if (p.fouls >= foulLimit && this._benchAvailable()) {
+        return this._substitute(i, `${this._cpuPlayerName(i)} has ${p.fouls} fouls — protecting him for the finish.`);
+      }
+
+      // 3. Matchup: user's star is killing us — get a stopper in.
+      if (this._userStarIdx >= 0 && this._userStarPts >= 14 && i === this._cpuWorstDefenderVs(this._userStarIdx)) {
+        const stopper = this._findDefensiveStopper();
+        if (stopper >= 0 && stopper !== i) {
+          return this._substitute(i, `Getting a stopper in on ${this._userPlayerName(this._userStarIdx)}.`);
+        }
+      }
+    }
+
+    // 4. Ride the hot hand: extend the hot player's run (skip their normal rest).
+    if (this.hotHand.idx >= 0 && this.hotHand.points >= 12) {
+      this._hotHandProtected = this.hotHand.idx;
+    }
+  }
+
+  _benchAvailable() {
+    try {
+      const bench = this.api.getCpuBench();
+      return bench && bench.length > 0 && this.api.getCpuSubsLeft() > 0;
+    } catch (e) { return false; }
+  }
+
+  _substitute(outIdx, reason) {
+    if (this._hotHandProtected === outIdx) return; // don't pull the hot hand
+    const ok = this.api.cpuSubstitute(outIdx, reason);
+    if (ok) {
+      this.subCooldown = 25;
+      this.api.announce('CPU SUBSTITUTION', reason, 'rotation');
+    }
+  }
+
+  _cpuPlayerName(idx) {
+    try { return this.api.rosterFor('cpu', idx).name || `CPU ${idx + 1}`; }
+    catch (e) { return `CPU ${idx + 1}`; }
+  }
+
+  _cpuWorstDefenderVs(userStarIdx) {
+    // Crude: the CPU defender most recently scored on by the star.
+    // Host can override via api.getCpuDefensiveMatchup(starIdx).
+    try {
+      if (this.api.getCpuDefensiveMatchup) return this.api.getCpuDefensiveMatchup(userStarIdx);
+    } catch (e) {}
+    return Math.floor(Math.random() * 5);
+  }
+
+  _findDefensiveStopper() {
+    try {
+      const bench = this.api.getCpuBench() || [];
+      // Bench entries: [name, number, pos, rating]. Prefer wings/big for stops.
+      let best = -1, bestScore = -1;
+      bench.forEach((b, i) => {
+        const pos = b[2] || '';
+        const score = (b[3] || 60) + (/SF|PF|SG/.test(pos) ? 8 : 0);
+        if (score > bestScore) { bestScore = score; best = i; }
+      });
+      return best;
+    } catch (e) { return -1; }
+  }
+
+  /* ========================================================================
+   * LATE-GAME STRATEGY
+   * ====================================================================== */
+  _manageLateGame() {
+    if (this.api.isPaused() || this.api.isGameOver()) return;
+    const qRem = this._qRemaining();
+    if (this.api.getGameQuarter() !== 4 || qRem > 120) {
+      this.foulStrategyArmed = false;
+      return;
+    }
+    const diff = this.api.getScoreCPU() - this.api.getScoreUser();
+
+    // 1. Down 3+ with <30s and user has the ball: FOUL. Target the poor FT shooter.
+    if (diff <= -3 && qRem < 30 && this.api.getBallTeam() === 'user' && !this.foulStrategyArmed) {
+      const target = this._findWorstFTShooter('user');
+      this.foulStrategyArmed = true;
+      this.api.setFoulStrategy({ active: true, targetIdx: target });
+      this.api.announce(
+        'FOUL TO EXTEND',
+        `Down ${-diff} — fouling ${this._userPlayerName(target)} (${this._userFT(target)}% FT) to extend the game.`
+      );
+      return;
+    }
+    if (this.foulStrategyArmed && (diff > -3 || this.api.getBallTeam() !== 'user')) {
+      this.foulStrategyArmed = false;
+      this.api.setFoulStrategy({ active: false });
+    }
+
+    // 2. Up 3, under 15s, user has ball: foul BEFORE the three (no and-one prayer).
+    //    Conservative coaches do this; aggressive ones trust the contest.
+    if (diff === 3 && qRem < 15 && this.api.getBallTeam() === 'user' &&
+        this.personality === 'grinder' && !this._fouledUpThree) {
+      this._fouledUpThree = true;
+      const target = this._findWorstFTShooter('user');
+      this.api.setFoulStrategy({ active: true, targetIdx: target, upThree: true });
+      this.api.announce('FOUL UP THREE', 'Not giving up the tying three. Make them earn it at the line.');
+    }
+
+    // 3. Tie or down 1-2, <24s, CPU ball: hold for the last shot.
+    //    (Handled in _considerLastShotHold via possession start.)
+  }
+
+  _considerLastShotHold(team) {
+    const qRem = this._qRemaining();
+    const diff = this.api.getScoreCPU() - this.api.getScoreUser();
+    if (this.api.getGameQuarter() === 4 && team === 'cpu' &&
+        qRem < 30 && qRem > 8 && diff >= -2 && diff <= 2 &&
+        !this.lastShotHeld) {
+      this.lastShotHeld = true;
+      this.api.setCpuTempo('stall');
+      this.api.announce('LAST SHOT', 'Holding for the final look. No rush — one good shot wins it.');
+    }
+    if (this.lastShotHeld && (qRem <= 8 || team !== 'cpu')) {
+      this.lastShotHeld = false;
+      this.api.setCpuTempo(this.P.pace); // restore
+    }
+  }
+
+  _findWorstFTShooter(team) {
+    let worst = 0, worstFT = 101;
+    for (let i = 0; i < 5; i++) {
+      try {
+        const ft = this._userFT(i);
+        // Skip the ball handler if they're elite? No — hack-a-whoever is weakest.
+        if (ft < worstFT) { worstFT = ft; worst = i; }
+      } catch (e) {}
+    }
+    return worst;
+  }
+
+  _userFT(idx) {
+    try {
+      const r = this.api.rosterFor('user', idx);
+      return r.ft || r[3] || 70;
+    } catch (e) { return 70; }
+  }
+
+  /* ========================================================================
+   * HALFTIME ADJUSTMENTS
+   * ====================================================================== */
+  _applyHalftimeAdjustments() {
+    const h = this.half;
+    const adjustments = [];
+
+    // 1. Perimeter: user burned us from three.
+    const threePct = h.userThreesAttempted > 0 ? h.userThreesMade / h.userThreesAttempted : 0;
+    if (h.userThreesAttempted >= 8 && threePct >= 0.38) {
+      adjustments.push({
+        scheme: this.P.prefersZone ? 'zone-2-3' : 'chase',
+        text: `They shot ${(threePct * 100).toFixed(0)}% from three (${h.userThreesMade}/${h.userThreesAttempted}). ${this.P.prefersZone ? 'Zone it up, close out short.' : 'No more open looks — chase everything.'}`,
+      });
+    } else if (h.userThreesAttempted >= 10 && threePct < 0.28) {
+      adjustments.push({
+        scheme: 'pack',
+        text: `They're ${(threePct * 100).toFixed(0)}% from deep — pack it in, dare them to keep missing.`,
+      });
+    }
+
+    // 2. Paint: user lived in the lane.
+    if (h.userPaintPoints >= 20) {
+      adjustments.push({
+        scheme: 'protect-paint',
+        text: `${h.userPaintPoints} paint points in the half. Wall off the lane.`,
+      });
+    }
+
+    // 3. Pick & roll: staple of their half.
+    if (h.userPnR >= 6) {
+      adjustments.push({
+        scheme: 'hedge',
+        text: `${h.userPnR} pick-and-rolls — we're hedging everything coming out of the break.`,
+      });
+    }
+
+    // 4. Turnovers: if we're forcing them, press more.
+    if (h.userTurnovers >= 6 && this.personality === 'blur') {
+      adjustments.push({
+        scheme: 'press',
+        text: `${h.userTurnovers} turnovers forced — turning up the pressure.`,
+      });
+    }
+
+    // 5. Star: their best player.
+    if (this._userStarIdx >= 0 && this._userStarPts >= 12) {
+      adjustments.push({
+        scheme: 'trap-star',
+        starIdx: this._userStarIdx,
+        text: `${this._userPlayerName(this._userStarIdx)} has ${this._userStarPts}. He's seeing two jerseys in the second half.`,
+      });
+    }
+
+    if (!adjustments.length) {
+      this.api.announce('HALFTIME', `${this.P.coachName}: "Stay the course. First to blink loses." No major changes.`, 'halftime');
+      return;
+    }
+
+    // Apply the highest-priority adjustment as the base second-half scheme.
+    const primary = adjustments[0];
+    this._setDefensiveScheme(primary.scheme, primary.text, true, primary);
+    this.api.announce(
+      'HALFTIME ADJUSTMENTS',
+      adjustments.map(a => '• ' + a.text).join('\n'),
+      'halftime'
+    );
+  }
+
+  /* ========================================================================
+   * UTILITIES
+   * ====================================================================== */
+  _qRemaining() {
+    // Seconds REMAINING in the current quarter.
+    const t = this.api.getGameSeconds();
+    const ql = this.api.getQuarterLength();
+    return ql - (t % ql);
+  }
+
+  resetForNewGame() {
+    const fresh = new CPUCoach(this.api, { personality: this.personality });
+    Object.assign(this, fresh);
+  }
+}
+
+/* ============================================================================
+ * SCHEME EFFECTS TABLE
+ * ----------------------------------------------------------------------------
+ * The host game translates scheme names into behavior via
+ * api.applyDefensiveScheme(scheme, opts). Recommended mapping:
+ *
+ *   man          base man-to-man, helpDefense 65
+ *   hedge        hard hedge on screens: helpDefense 80, doubleTeam on PNR
+ *   trap-pnr     trap the ball handler: doubleTeamMode true, helpDefense 88
+ *   trap-star    double the star: doubleTeamMode true, help toward star
+ *   zone-2-3     zone shell: helpDefense 78, concede midrange
+ *   chase        deny perimeter: tight on shooters, helpDefense 60
+ *   double-post  collapse on post: helpDefense 85 when ball in paint
+ *   shade-iso    load strong side: helpDefense 75, invite baseline
+ *   protect-paint pack the lane: helpDefense 90, sag off shooters
+ *   pack         extreme pack: helpDefense 95
+ *   press        full-court: defender speed +, steal chance +
+ * ========================================================================== */
+
+/* ============================================================================
+ * GAME API ADAPTER CONTRACT
+ * ----------------------------------------------------------------------------
+ * The host game must provide an object implementing:
+ *
+ * READS
+ *   getScoreUser() -> int
+ *   getScoreCPU()  -> int
+ *   getGameSeconds() -> float (total elapsed)
+ *   getQuarterLength() -> float (seconds per quarter)
+ *   getGameQuarter() -> 1..4
+ *   getBallTeam() -> 'user' | 'cpu'
+ *   getShotSeconds() -> float
+ *   getPlayerTeam() -> [ {userData:{stamina,fouls,fouledOut,roster,hasBall}} x5 ]
+ *   getCpuTeam()    -> same for CPU
+ *   getCpuBench()   -> [[name,number,pos,rating], ...]
+ *   getCpuSubsLeft()-> int
+ *   getCpuTeamId()  -> string (e.g. 'heat')          [optional]
+ *   getCpuTeamName()-> string (e.g. 'Miami Heat')
+ *   rosterFor(side, idx) -> {name, number, pos, ft}
+ *   isPaused() -> bool
+ *   isGameOver() -> bool
+ *   isFatigueOn() -> bool
+ *   isUserShootingFT() -> bool
+ *   getCpuDefensiveMatchup(userStarIdx) -> cpuIdx    [optional]
+ *
+ * WRITES
+ *   applyDefensiveScheme(scheme, {starIdx, silent})
+ *   setCpuTempo('slow'|'fast'|'stall')
+ *   setFoulStrategy({active, targetIdx?, upThree?})
+ *   cpuCallTimeout(title, detail, timeoutsLeft)
+ *   cpuSubstitute(outIdx, reason) -> bool (false if not possible)
+ *   announce(title, detail, kind)  // kind: 'defense'|'rotation'|'halftime'|...
+ *
+ * COACHING REPORT WIRING (example for Courtside 27's real globals):
+ *
+ *   const api = {
+ *     getScoreUser: () => scoreUser,
+ *     getScoreCPU:  () => scoreCPU,
+ *     getGameSeconds: () => (settings.quarterMinutes*60*4) - gameSeconds,
+ *     getQuarterLength: () => settings.quarterMinutes*60,
+ *     getGameQuarter: () => gameQuarter,
+ *     getBallTeam: () => ballTeam,
+ *     getShotSeconds: () => shotSeconds,
+ *     getPlayerTeam: () => playerTeam,
+ *     getCpuTeam: () => cpuTeam,
+ *     getCpuBench: () => (chosenTeam('cpu').bench || []),
+ *     getCpuSubsLeft: () => cpuSubsLeft,      // host tracks; init 5
+ *     getCpuTeamId: () => $('awayTeam').value,
+ *     getCpuTeamName: () => chosenTeam('cpu').name,
+ *     rosterFor: (s,i) => rosterFor(s,i),
+ *     isPaused: () => paused,
+ *     isGameOver: () => gameEnded,
+ *     isFatigueOn: () => settings.fatigue,
+ *     isUserShootingFT: () => !!freeThrowMode && freeThrowMode.team==='user',
+ *     applyDefensiveScheme: (scheme, opts) => {
+ *       // map scheme -> settings.helpDefense / doubleTeamMode / difficulty
+ *       const map = { man:65, hedge:80, 'trap-pnr':88, 'trap-star':84,
+ *         'zone-2-3':78, chase:60, 'double-post':85, 'shade-iso':75,
+ *         'protect-paint':90, pack:95, press:70 };
+ *       settings.helpDefense = map[scheme] ?? 65;
+ *       doubleTeamMode = /trap|double/.test(scheme);
+ *       cpuDefScheme = scheme; cpuSchemeStar = opts.starIdx ?? -1;
+ *     },
+ *     setCpuTempo: (t) => { cpuTempo = t; },  // host reads in CPU offense AI
+ *     setFoulStrategy: (s) => { cpuFoulPlan = s; },
+ *     cpuCallTimeout: (title, detail, left) => {
+ *       cpuTimeouts = left; paused = true;
+ *       $('pause').classList.remove('hidden');
+ *       $('pauseText').textContent = `CPU TIMEOUT · ${title} · ${scoreUser}–${scoreCPU}`;
+ *       showToast('CPU TIMEOUT · '+title, detail, 1600);
+ *     },
+ *     cpuSubstitute: (outIdx, reason) => {
+ *       // mirror coachSubstitute() for the CPU side; return true on success
+ *       return cpuDoSubstitution(outIdx);
+ *     },
+ *     announce: (title, detail, kind) => {
+ *       // Big, visible, unmistakable: the chess move, narrated.
+ *       showToast('♟ ' + title, detail, 2200);
+ *       coachSetReport(title, detail);
+ *     },
+ *   };
+ * ========================================================================== */
+
+// UMD-ish export: works as a module or a browser global.
+(function (root, factory) {
+  if (typeof module !== 'undefined' && module.exports) module.exports = factory();
+  else root.CPUCoach = factory();
+})(typeof self !== 'undefined' ? self : this, function () { return CPUCoach; });
+
+
+
+/* ===== INLINED: coach-decisions.js ===== */
+/* ============================================================================
+   COURTSIDE 27 — COACH'S CLIPBOARD
+   Complete coaching decision system for Finals coach mode.
+   The coach watches from the sideline and makes STRATEGIC decisions only.
+   Players act autonomously; every call below shapes the sim, never the sticks.
+
+   ----------------------------------------------------------------------------
+   INTEGRATION (paste this entire file into the game module, AFTER the
+   `coachSetReport` function definition — it shares the module scope and uses
+   the existing globals: coachMode, playCall, screenTimer, doubleTeamMode,
+   coachTimeouts, coachSubCount, coachTimeoutLock, coachFocusStar, coachMode,
+   playerTeam, cpuTeam, settings, difficulty, gameSeconds, gameQuarter,
+   scoreUser, scoreCPU, ballTeam, ballHandler, active, shot, passFlight,
+   run, paused, gameEnded, practice, and helpers $, V, rosterFor,
+   chosenTeam, getHandler, basketFor, setState, showToast, updateUI,
+   switchPossession, resolveShootingFoul, coachSubstitute, coachCallTimeout,
+   coachFocus, coachDefenseChange, coachSetReport):
+
+     1. In begin(), right after the `$('coachDeck').classList.toggle(...)` line:
+          CoachClipboard.install();
+          CoachClipboard.reset();
+
+     2. In updateUI(), add one line anywhere:
+          CoachClipboard.sync();
+
+     3. In switchPossession(), at the very end, add:
+          CoachClipboard.onPossession();
+
+     4. DEFENSE HOOK — in teamAI(), change:
+            let mark=offense[i]||offense[0];
+        to:
+            let mark=offense[CoachClipboard.matchup(i)]||offense[i]||offense[0];
+        and change:
+            let target;if((i===0||mark===getHandler())|| ...
+        to:
+            let target;const __dov=CoachClipboard.defenderTarget(p,i,offense,mark,ballP,dir);
+            if(__dov){target=__dov;}else if((i===0||mark===getHandler())|| ...
+        (i.e. wrap the existing if-chain in an `else`.)
+
+     5. OPTIONAL (richer play effects) — in coachPossessionAI(), where it reads
+        `const pace=$('coachTempo')?.value||'balanced'` and
+        `const system=$('coachOffense')?.value||'motion'`, you may blend in:
+            const pp=CoachClipboard.playParams();   // {spacing,urgency,threeBias,postBias}
+            const tp=CoachClipboard.tempoParams();  // {speed, urgencyMul}
+        e.g. multiply handler speed by tp.speed and shot-chance by pp urgency.
+
+   WHAT WORKS WITH ZERO GAME EDITS (steps 1-3 only):
+     play calling (maps to legacy playCall values), tempo, legacy defensive
+     coverage, timeouts, substitutions, intentional fouls, closer designation,
+     advisors, keyboard shortcuts, and the full panel UI.
+   WHAT NEEDS STEP 4: zone/press/trap positioning + matchup assignments.
+   ========================================================================== */
+
+/* ------------------------- 1. CLIPBOARD STYLES ------------------------- */
+const COACH_CLIPBOARD_CSS = `
+#coachDeck{font-family:Arial,Helvetica,sans-serif}
+.cc-head{border-bottom:1px solid #2a3542;padding-bottom:8px;margin-bottom:8px}
+.cc-score{display:flex;align-items:center;justify-content:space-between;background:#05090dd9;border:1px solid #2a3542;border-radius:3px;padding:7px 10px;margin-top:8px;font-variant-numeric:tabular-nums}
+.cc-score b{font-size:19px;letter-spacing:.04em;color:#fff}
+.cc-score .cc-clock{font-size:12px;color:#d8ff48;font-weight:900;letter-spacing:.12em}
+.cc-score .cc-q{font-size:10px;color:#8a9aab;letter-spacing:.14em}
+.cc-sec{margin:10px 0 4px}
+.cc-sec>label{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:.24em;color:#9fb0a4;font-weight:900;margin-bottom:6px}
+.cc-sec>label .cc-hint{color:#5a6a7c;letter-spacing:.08em;font-weight:400}
+.cc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cc-grid.two{grid-template-columns:repeat(2,1fr)}
+.cc-btn{position:relative;background:#0d141bd9;border:1px solid #2a3542;color:#dfe7dc;border-radius:3px;padding:8px 6px 7px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s,transform .1s}
+.cc-btn:hover{border-color:#d8ff48;background:#12202a}
+.cc-btn:active{transform:scale(.97)}
+.cc-btn .k{position:absolute;top:3px;left:5px;font-size:8px;font-weight:900;color:#0a0e12;background:#d8ff48;border-radius:2px;padding:1px 4px;letter-spacing:.05em}
+.cc-btn .t{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;margin-top:9px}
+.cc-btn .s{display:block;font-size:8px;color:#7a8a9c;letter-spacing:.04em;margin-top:2px;line-height:1.3}
+.cc-btn.on{border-color:#d8ff48;background:#16241c;box-shadow:0 0 12px #d8ff4833,inset 0 0 8px #d8ff4814}
+.cc-btn.on .t{color:#d8ff48}
+.cc-btn.warn{border-color:#e54f40}
+.cc-btn.warn.pulse{animation:ccPulse 1.1s ease-in-out infinite}
+.cc-btn:disabled{opacity:.35;cursor:default;transform:none}
+.cc-btn:disabled:hover{border-color:#2a3542;background:#0d141bd9}
+@keyframes ccPulse{0%,100%{box-shadow:0 0 0 #e54f4000}50%{box-shadow:0 0 16px #e54f40aa;border-color:#ff7a6b}}
+.cc-seg{display:flex;gap:6px}
+.cc-seg .cc-btn{flex:1}
+.cc-row{display:flex;gap:6px}
+.cc-row .cc-btn{flex:1}
+.cc-count{font-variant-numeric:tabular-nums;color:#d8ff48;font-weight:900}
+.cc-drawer{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.cc-drawer.open{max-height:420px}
+.cc-prow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #232e38;border-radius:3px;margin-bottom:5px;background:#0a1016;cursor:pointer}
+.cc-prow:hover{border-color:#d8ff48}
+.cc-prow.sel{border-color:#d8ff48;background:#14201a}
+.cc-prow .nm{flex:1;min-width:0}
+.cc-prow .nm b{display:block;font-size:11px;color:#fff;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-prow .nm span{font-size:9px;color:#7a8a9c;letter-spacing:.1em}
+.cc-stam{width:64px;height:6px;background:#1a232c;border-radius:3px;overflow:hidden;flex:none}
+.cc-stam i{display:block;height:100%;background:linear-gradient(90deg,#e54f40,#f3b544 45%,#d8ff48 75%)}
+.cc-fouls{display:flex;gap:2px;flex:none}
+.cc-fouls i{width:7px;height:7px;border-radius:50%;background:#232e38;border:1px solid #3a4754}
+.cc-fouls i.f{background:#e54f40;border-color:#e54f40}
+.cc-fouls i.trouble{animation:ccPulse 1.4s infinite}
+.cc-tag{font-size:8px;font-weight:900;letter-spacing:.1em;padding:2px 5px;border-radius:2px;flex:none}
+.cc-tag.tired{background:#4d3413;color:#f3b544}
+.cc-tag.foul{background:#4d1713;color:#ff8a7a}
+.cc-tag.out{background:#333;color:#888}
+.cc-mrow{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid #232e38;border-radius:3px;margin-bottom:5px;background:#0a1016;cursor:pointer;font-size:11px}
+.cc-mrow:hover{border-color:#d8ff48}
+.cc-mrow .who{flex:1;color:#fff;font-weight:700;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-mrow .vs{color:#5a6a7c;font-size:9px;letter-spacing:.2em}
+.cc-mrow .tgt{flex:1;text-align:right;color:#9fd8ff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-advisor{font-size:10px;line-height:1.5;color:#c8d4c9;background:#0d141bd9;border:1px dashed #3a4754;border-radius:3px;padding:7px 9px;margin-top:8px;min-height:30px}
+.cc-advisor b{color:#f3b544;letter-spacing:.1em}
+.cc-advisor .go{color:#d8ff48;font-weight:900}
+.cc-help{position:fixed;right:12px;bottom:12px;z-index:60;background:#05090df2;border:1px solid #d8ff48;border-radius:4px;padding:12px 14px;font-size:10px;color:#dfe7dc;max-width:250px;display:none}
+.cc-help.show{display:block}
+.cc-help h4{margin:0 0 8px;font-size:11px;letter-spacing:.2em;color:#d8ff48}
+.cc-help div{display:flex;justify-content:space-between;margin:3px 0}
+.cc-help .k{background:#d8ff48;color:#0a0e12;font-weight:900;border-radius:2px;padding:1px 6px;font-size:9px}
+`;
+
+/* ------------------------- 2. CLIPBOARD HTML ------------------------- */
+const COACH_CLIPBOARD_HTML = `
+ <div class="coachKicker">COURTSIDE 27 / LIVE BENCH</div>
+ <div class="coachTitle">COACH'S CLIPBOARD</div>
+ <div class="coachMeta" id="coachMatchMeta">A live 3D game. You control the decisions, not the players.</div>
+ <div class="cc-head">
+  <div class="cc-score"><b id="ccScore">— —</b><span class="cc-clock" id="ccClock">--:--</span><span class="cc-q" id="ccQ">Q1</span></div>
+ </div>
+
+ <div class="cc-sec"><label>OFFENSIVE PLAY <span class="cc-hint">keys 1–6</span></label>
+  <div class="cc-grid" id="ccPlays"></div>
+ </div>
+
+ <div class="cc-sec"><label>DEFENSIVE SCHEME <span class="cc-hint">keys Q–T</span></label>
+  <div class="cc-grid" id="ccSchemes"></div>
+ </div>
+
+ <div class="cc-sec"><label>GAME TEMPO <span class="cc-hint">keys Z X C</span></label>
+  <div class="cc-seg" id="ccTempo"></div>
+ </div>
+
+ <div class="cc-sec"><label>BENCH DECISIONS</label>
+  <div class="cc-row">
+   <button class="cc-btn" id="ccTimeout"><span class="k">D</span><span class="t">TIMEOUT</span><span class="s"><span class="cc-count" id="ccTOCount">7</span> LEFT</span></button>
+   <button class="cc-btn" id="ccSubs"><span class="k">N</span><span class="t">ROTATION</span><span class="s"><span class="cc-count" id="ccSubCount">5</span> LEFT</span></button>
+   <button class="cc-btn" id="ccFoul"><span class="k">G</span><span class="t">FOUL</span><span class="s">INTENTIONAL</span></button>
+   <button class="cc-btn" id="ccCloser"><span class="k">F</span><span class="t">CLOSER</span><span class="s" id="ccCloserName">—</span></button>
+  </div>
+  <div class="cc-row" style="margin-top:6px">
+   <button class="cc-btn" id="ccMatchups"><span class="k">M</span><span class="t">MATCHUPS</span><span class="s">WHO GUARDS WHOM</span></button>
+   <button class="cc-btn" id="ccCam"><span class="k">V</span><span class="t">CAMERA</span><span class="s">BROADCAST ANGLE</span></button>
+   <button class="cc-btn" id="ccHelpBtn"><span class="k">H</span><span class="t">KEYS</span><span class="s">SHORTCUTS</span></button>
+  </div>
+ </div>
+
+ <div class="cc-drawer" id="ccRotationDrawer">
+  <div class="cc-sec"><label>ROTATION — TAP STARTER, THEN BENCH PLAYER</label><div id="ccCourt"></div></div>
+  <div class="cc-sec"><label>BENCH</label><div id="ccBench"></div></div>
+ </div>
+
+ <div class="cc-drawer" id="ccMatchupDrawer">
+  <div class="cc-sec"><label>DEFENSIVE ASSIGNMENTS — TAP A ROW TO CHANGE <span class="cc-hint" id="ccAutoMatch" style="cursor:pointer;color:#d8ff48">AUTO ▸</span></label><div id="ccMatchRows"></div></div>
+ </div>
+
+ <div class="cc-advisor" id="ccAdvisor">Coaching advisor is watching the game…</div>
+
+ <div class="coachGroup"><label>BENCH REPORT</label><div class="coachReadout" id="coachReport">Tip-off is ready. Set your game plan.</div></div>
+
+ <div class="coachBottom"><span id="coachSubs">SUBS 5/5</span><span id="coachTO">TIMEOUTS 7</span></div>
+
+ <!-- hidden selects keep every existing game hook working ($('coachOffense').value etc.) -->
+ <select id="coachOffense" style="display:none"><option value="motion">Motion offense</option><option value="pick-roll">Pick &amp; roll</option><option value="isolation">Star isolation</option><option value="perimeter">Perimeter attack</option></select>
+ <select id="coachTempo" style="display:none"><option value="patient">Patient / protect the ball</option><option value="balanced" selected>Balanced</option><option value="fast">Push the pace</option></select>
+ <select id="coachDefense" style="display:none"><option value="man" selected>Man-to-man</option><option value="pressure">Full-court pressure</option><option value="paint">Protect the paint</option><option value="switch">Switch everything</option><option value="zone23">2-3 zone</option><option value="zone32">3-2 zone</option><option value="trap">Half-court trap</option></select>
+ <button id="coachSub" style="display:none"></button>
+ <button id="coachTimeout" style="display:none"></button>
+ <button id="coachFocus" style="display:none"></button>
+ <button id="coachCam" style="display:none"></button>
+
+ <div class="cc-help" id="ccHelp"><h4>SHORTCUTS</h4>
+  <div><span>Plays</span><span><span class="k">1</span>–<span class="k">6</span></span></div>
+  <div><span>Defense</span><span><span class="k">Q</span><span class="k">W</span><span class="k">E</span><span class="k">R</span><span class="k">T</span></span></div>
+  <div><span>Tempo</span><span><span class="k">Z</span><span class="k">X</span><span class="k">C</span></span></div>
+  <div><span>Timeout / Rotation</span><span><span class="k">D</span> <span class="k">N</span></span></div>
+  <div><span>Matchups / Closer</span><span><span class="k">M</span> <span class="k">F</span></span></div>
+  <div><span>Intentional foul</span><span class="k">G</span></div>
+  <div><span>Camera</span><span class="k">V</span></div>
+ </div>
+`;
+
+/* ------------------------- 3. PLAYBOOK DATA ------------------------- */
+/* Each play maps to a legacy playCall value (so the sim responds with ZERO
+   game edits) plus richer params for the optional coachPossessionAI hook.   */
+const COACH_PLAYS = {
+ 'pick-roll':  {key:'1', label:'PICK & ROLL', sub:'Screener to ball · drive or kick', base:'pick-roll', screen:5,
+                params:{spacing:1.0, urgency:1.0, threeBias:1.0, postBias:0},
+                effect:'Ball-handler attacks off a high screen. Screener rolls hard; weak-side spacing holds for the kick-out three.'},
+ 'isolation':  {key:'2', label:'ISOLATION', sub:'Clear-out for your scorer', base:'isolation', screen:0,
+                params:{spacing:1.35, urgency:1.1, threeBias:.8, postBias:0},
+                effect:'Four teammates clear. Best matchup hunts the switch and goes one-on-one.'},
+ 'post-up':    {key:'3', label:'POST UP', sub:'Entry to the big on the block', base:'isolation', screen:0, feedPost:true,
+                params:{spacing:1.1, urgency:1.15, threeBias:.55, postBias:1},
+                effect:'Ball goes straight to your best big on the block. Guards space for the double-team kick.'},
+ 'motion':     {key:'4', label:'MOTION', sub:'Cut · screen · share the ball', base:'motion', screen:2,
+                params:{spacing:1.0, urgency:.95, threeBias:1.0, postBias:0},
+                effect:'Continuous off-ball movement. Finds the open man instead of forcing a star look.'},
+ 'horns':      {key:'5', label:'HORNS', sub:'Double-high screen set', base:'pick-roll', screen:6,
+                params:{spacing:1.15, urgency:1.0, threeBias:1.15, postBias:0},
+                effect:'Two screeners at the elbows — pick a side, run the two-man game, weak side lifts for threes.'},
+ 'transition': {key:'6', label:'TRANSITION', sub:'Early offense before they set', base:'motion', screen:0,
+                params:{spacing:1.2, urgency:1.55, threeBias:1.25, postBias:0},
+                effect:'Push before the defense sets. First good look in 6 seconds — rim or corner three.'},
+};
+
+/* Defensive schemes. help/diff/dbl mirror the legacy coachDefenseChange
+   behavior exactly for the four original values; zones add the zone flag. */
+const COACH_SCHEMES = {
+ 'man':    {key:'Q', label:'MAN-TO-MAN', sub:'Straight matchups', help:65, diff:'pro',  dbl:false,
+            effect:'Every defender takes a man. Balanced help, no gimmicks.'},
+ 'zone23': {key:'W', label:'2-3 ZONE', sub:'Pack the paint', help:88, diff:'pro', dbl:false, zone:'23',
+            effect:'Two up top, three across the lane. Dares them to beat you from deep.'},
+ 'zone32': {key:'E', label:'3-2 ZONE', sub:'Chase the shooters', help:80, diff:'pro', dbl:false, zone:'32',
+            effect:'Three across the top to contest threes. Soft in the middle — rebounding matters.'},
+ 'press':  {key:'R', label:'FULL PRESS', sub:'90 feet of heat', help:70, diff:'hall', dbl:true, press:true,
+            effect:'Pick the ball up in the backcourt. Speeds them up, risks fouls and blow-bys.'},
+ 'trap':   {key:'T', label:'HALFCOURT TRAP', sub:'Double · rotate', help:95, diff:'hall', dbl:true, trap:true,
+            effect:'Double the ball past halfcourt and rotate behind it. Forces rushed decisions.'},
+};
+
+const COACH_TEMPOS = {
+ 'patient':  {key:'Z', label:'PATIENT', sub:'Protect the ball', speed:.75, urgencyMul:.9,
+              effect:'Walk it up, use the clock, hunt the best shot. Fewer turnovers, fewer possessions.'},
+ 'balanced': {key:'X', label:'BALANCED', sub:'Read the game', speed:1.0, urgencyMul:1.0,
+              effect:'Standard pace. Take what the defense gives.'},
+ 'fast':     {key:'C', label:'PUSH', sub:'Run every chance', speed:1.35, urgencyMul:1.25,
+              effect:'Sprint into offense. More possessions, earlier shots, more mistakes both ways.'},
+};
+
+/* ------------------------- 4. CLIPBOARD STATE ------------------------- */
+let coachPlayKey='motion';                 // active playbook key
+let coachScheme='man';                     // active defensive scheme key
+let coachTempoKey='balanced';              // active tempo key
+let coachMatchups=[0,1,2,3,4];             // our defender i -> their attacker j
+let coachCloser=0;                         // roster index of designated closer
+let coachScoreLog=[];                      // [{t:gameSeconds, diff}] per possession
+let coachSelectedCourt=-1;                 // rotation drawer selection
+let coachKeysBound=false;                  // keyboard guard
+let coachAdvisorCache={timeout:null, late:null};
+
+function coachPlayParams(){ return (COACH_PLAYS[coachPlayKey]||COACH_PLAYS.motion).params; }
+function coachTempoParams(){ const t=COACH_TEMPOS[coachTempoKey]||COACH_TEMPOS.balanced; return {speed:t.speed, urgencyMul:t.urgencyMul}; }
+
+/* ------------------------- 5. PLAY CALLING ------------------------- */
+function coachCallPlay(key){
+  if(!coachMode||!run||paused||gameEnded) return;
+  const play=COACH_PLAYS[key]; if(!play) return;
+  coachPlayKey=key;
+  playCall=play.base;                       // legacy hook — sim responds immediately
+  screenTimer=play.screen;
+  const sel=$('coachOffense'); if(sel) sel.value=play.base;   // keep hidden select synced
+  if(play.feedPost) coachFeedPost();
+  coachSetReport(`Play: ${play.label}`, play.effect);
+  setState('PLAY CALL', `${play.label} — ${play.sub}`);
+  showToast('OFFENSIVE SET', play.label, 700);
+  try{ if(typeof coachOnPlayCall==='function') coachOnPlayCall(play.base||key); }catch(e){}
+  CoachClipboard.sync();
+}
+
+/* Post-up entry: ball goes straight to the best big on the block. */
+function coachFeedPost(){
+  if(ballTeam!=='user'||shot||passFlight) return;
+  let big=0, best=-1;
+  for(let i=0;i<5;i++){ const r=rosterFor('user',i);
+    const score=(r.pos==='C'?30:r.pos==='PF'?18:0)+(r.ft||70);
+    if(!playerTeam[i].userData.fouledOut && score>best){best=score;big=i;} }
+  playerTeam.forEach((p,i)=>p.userData.hasBall=(i===big));
+  ballHandler=big; active=big;
+  coachSetReport('Post entry', `${rosterFor('user',big).name} catches on the block. Guards space the floor.`);
+}
+
+/* ------------------------- 6. DEFENSIVE SCHEMES ------------------------- */
+function coachSetScheme(key){
+  if(!coachMode||!run||paused||gameEnded) return;
+  const s=COACH_SCHEMES[key]; if(!s) return;
+  coachScheme=key;
+  settings.helpDefense=s.help; difficulty=s.diff; doubleTeamMode=s.dbl;
+  const sel=$('coachDefense'); if(sel) sel.value=(key==='zone23'||key==='zone32'||key==='trap')?key:'man';
+  // legacy parity: keep the original four select values meaningful
+  if(key==='press'||key==='man'){ if(sel) sel.value=(key==='press'?'pressure':'man'); }
+  coachSetReport(`Defense: ${s.label}`, s.effect + (s.zone?' Zone spots activate when we defend.':''));
+  setState('DEFENSIVE SCHEME', `${s.label} — ${s.sub}`);
+  CoachClipboard.sync();
+}
+
+/* Zone / press / trap positioning. Called from teamAI's defense loop
+   (integration step 4). Returns a Vector3 target or null (use default). */
+function coachDefenderTarget(p,i,offense,mark,ballP,dir){
+  if(!coachMode||ballTeam!=='cpu') return null;      // schemes apply when WE defend
+  const s=COACH_SCHEMES[coachScheme]; if(!s) return null;
+  const bx=basketFor('user').pos.x, cx=(-Math.sign(bx))||1;  // toward halfcourt
+  const cl=(x,z)=>V(THREE.MathUtils.clamp(x,-13,13),0,THREE.MathUtils.clamp(z,-6.4,6.4));
+  if(s.zone){
+    const bz=ballP.z*.18;
+    const spots = s.zone==='23'
+      ? [[bx+cx*4.6,-2.6+bz],[bx+cx*4.6,2.6+bz],[bx+cx*1.4,-4.6],[bx+cx*1.0,bz],[bx+cx*1.4,4.6]]
+      : [[bx+cx*4.2,-4.2],[bx+cx*4.8,bz],[bx+cx*4.2,4.2],[bx+cx*1.2,-2.6],[bx+cx*1.2,2.6]];
+    const sp=spots[i%spots.length];
+    return cl(sp[0],sp[1]);
+  }
+  if(s.press){
+    const order=playerTeam.map((q,j)=>({j,d:q.position.distanceTo(ballP)})).sort((a,b)=>a.d-b.d);
+    if(order[0].j===i) return ballP.clone();                                   // on the ball, full court
+    if(order[1]&&order[1].j===i) return cl(ballP.x+cx*1.4, ballP.z+(i%2?1.4:-1.4));
+    return null;                                                               // rest: default man
+  }
+  if(s.trap && Math.sign(ballP.x)===Math.sign(bx)){
+    const order=playerTeam.map((q,j)=>({j,d:q.position.distanceTo(ballP)})).sort((a,b)=>a.d-b.d);
+    if(order[0].j===i||(order[1]&&order[1].j===i)) return cl(ballP.x,ballP.z);   // the trap
+    const back=[[bx+cx*1.6,-4.4],[bx+cx*1.2,0],[bx+cx*1.6,4.4]];                // rotate behind
+    const k=[0,1,2,3,4].filter(j=>j!==order[0].j&&j!==(order[1]&&order[1].j)).indexOf(i);
+    const sp=back[Math.max(0,k)%3];
+    return cl(sp[0],sp[1]);
+  }
+  return null;
+}
+
+/* Matchup lookup for the defense loop hook: our defender i -> their man. */
+function coachMatchup(i){
+  if(!coachMode||ballTeam!=='cpu') return i;
+  const j=coachMatchups[i];
+  return (j==null||j<0||j>4)?i:j;
+}
+function coachCycleMatchup(i){
+  coachMatchups[i]=((coachMatchups[i]??i)+1)%5;
+  const a=rosterFor('user',i), b=rosterFor('cpu',coachMatchups[i]);
+  coachSetReport('Matchup changed', `${a.name} now guards ${b.name}.`);
+  CoachClipboard.renderMatchups();
+}
+function coachAutoMatchups(){
+  const ours=[0,1,2,3,4].sort((a,b)=>(rosterFor('user',b).ft||70)-(rosterFor('user',a).ft||70));
+  const theirs=[0,1,2,3,4].sort((a,b)=>(rosterFor('cpu',b).ft||70)-(rosterFor('cpu',a).ft||70));
+  ours.forEach((oi,k)=>coachMatchups[oi]=theirs[k]);
+  coachSetReport('Matchups auto-set','Best defender takes their best scorer, down the line.');
+  CoachClipboard.renderMatchups();
+}
+
+/* ------------------------- 7. TEMPO CONTROL ------------------------- */
+function coachSetTempo(key){
+  if(!coachMode||!run||paused||gameEnded) return;
+  const t=COACH_TEMPOS[key]; if(!t) return;
+  coachTempoKey=key;
+  const sel=$('coachTempo'); if(sel) sel.value=key;   // legacy hook — AI reads this
+  coachSetReport(`Tempo: ${t.label}`, t.effect);
+  CoachClipboard.sync();
+}
+
+/* ------------------------- 8. TIMEOUTS + ADVISOR ------------------------- */
+function coachTimeout(reason){
+  if(!coachMode||!run||paused||gameEnded) return;
+  if(coachTimeouts<=0){ coachSetReport('No timeouts left','The bench is out of stoppages.'); return; }
+  if(coachTimeoutLock>0){ coachSetReport('Timeout unavailable','Wait for the current possession to settle.'); return; }
+  coachCallTimeout();   // existing game function: pauses, resets clock, locks 18s
+  if(reason) coachSetReport(`Timeout — ${reason}`, `${coachTimeouts} remaining. Adjust, sub, then resume.`);
+  CoachClipboard.sync();
+}
+
+/* Watches score flow and game state; returns a timeout suggestion or null. */
+function coachTimeoutAdvisor(){
+  if(!coachMode||!run||paused||gameEnded) return null;
+  if(coachTimeouts<=0||coachTimeoutLock>0) return null;
+  const diff=scoreUser-scoreCPU;
+  const log=coachScoreLog;
+  if(log.length>2){
+    const cutoff=gameSeconds+150;
+    const old=log.find(e=>e.t>=cutoff)||log[0];
+    const slide=old.diff-diff;                       // positive = opponent run
+    if(slide>=8) return {label:'STOP THE RUN', reason:`Opponent outscoring you by ${slide} lately. Break their rhythm.`};
+  }
+  if(gameQuarter===4&&gameSeconds<=35&&Math.abs(diff)<=6)
+    return {label:'SET FINAL SHOT', reason:'Draw up the last look of the quarter.'};
+  if(gameQuarter>=3){
+    const gassed=playerTeam.findIndex(p=>!p.userData.fouledOut&&p.userData.stamina<28);
+    if(gassed>=0) return {label:'REST STARTERS', reason:`${rosterFor('user',gassed).name} is gassed (${Math.round(playerTeam[gassed].userData.stamina)}%).`};
+  }
+  return null;
+}
+
+/* Late-game situation board. */
+function coachLateAdvisor(){
+  if(!coachMode||!run||gameEnded||gameQuarter!==4) return null;
+  const diff=scoreUser-scoreCPU;
+  if(gameSeconds<75&&diff<0&&diff>=-8&&ballTeam==='cpu'&&!shot)
+    return {label:'FOUL NOW', reason:'Trailing — stop the clock and extend the game.', action:'foul'};
+  if(gameSeconds<75&&diff>0&&ballTeam==='cpu'&&!shot)
+    return {label:'NO FOUL', reason:'Protect the lead. Make them beat you 5-on-5.'};
+  if(gameSeconds<=26&&ballTeam==='user'&&Math.abs(diff)<=5&&!shot)
+    return {label:'LAST SHOT', reason:'Timeout now to set up the final look.', action:'timeout'};
+  if(gameSeconds<=12&&diff<=-1&&diff>=-3&&ballTeam==='user'&&!shot)
+    return {label:'NEED THREE', reason:'Run HORNS or PERIMETER action for the tie.', action:'play', play:'horns'};
+  return null;
+}
+
+/* ------------------------- 9. SUBSTITUTIONS / ROTATION ------------------------- */
+function coachBenchEntry(bi){
+  const bench=(chosenTeam('user').bench||[]);
+  return bench[((bi%bench.length)+bench.length)%bench.length];
+}
+
+/* Targeted substitution: bench player bi replaces court player ci. */
+function coachSubstitution(ci,bi){
+  if(!coachMode||!run||paused||gameEnded) return;
+  if(coachSubCount<=0){ coachSetReport('No subs left','The rotation is locked for the night.'); return; }
+  const entry=coachBenchEntry(bi);
+  if(!entry){ coachSetReport('No bench data','This roster has no bench configured.'); return; }
+  const model=playerTeam[ci];
+  if(!model||model.userData.fouledOut){ coachSetReport('Cannot sub','Pick a player who is on the floor.'); return; }
+  const previous=rosterFor('user',ci).name;
+  model.userData.roster={name:entry[0],number:entry[1],pos:entry[2],ft:entry[3]};
+  model.userData.stamina=100; model.userData.fouls=0;
+  const draw=(canvas,fn)=>{const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);fn(ctx);};
+  draw(model.userData.numberCanvas,ctx=>{ctx.fillStyle='#f4f4e9';ctx.font='900 90px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(entry[1]),64,65);});
+  draw(model.userData.nameCanvas,ctx=>{ctx.fillStyle='#f4f4e9';ctx.font='900 26px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(entry[0]).toUpperCase(),128,24);});
+  model.userData.numberTexture.needsUpdate=true;
+  model.userData.nameTexture.needsUpdate=true;
+  active=ci;                                   // keep indicator on the slot; ball stays put
+  coachSubCount--;
+  const s1=$('coachSubs'); if(s1) s1.textContent=`SUBS ${coachSubCount}/5`;
+  coachSelectedCourt=-1;
+  coachSetReport('Substitution',`${previous} sits. ${entry[0]} (${entry[2]}) checks in with fresh legs.`);
+  CoachClipboard.renderRotation(); CoachClipboard.sync();
+}
+
+/* Quick sub: best bench option for the most tired (or fouled) starter. */
+function coachQuickSub(){
+  let ci=-1, score=-1;
+  for(let i=0;i<5;i++){ const p=playerTeam[i];
+    if(p.userData.fouledOut) continue;
+    const s=(100-p.userData.stamina)+(p.userData.fouls>=4?30:0);
+    if(s>score){score=s;ci=i;} }
+  if(ci<0||score<12){ coachSetReport('Rotation is fine','Nobody needs a breather right now.'); return; }
+  const bench=(chosenTeam('user').bench||[]);
+  let bi=0, br=-1;
+  bench.forEach((e,j)=>{ const r=e[3]||70; if(r>br){br=r;bi=j;} });
+  coachSubstitution(ci,bi);
+}
+
+/* ------------------------- 10. CLOSER + INTENTIONAL FOUL ------------------------- */
+function coachBestCloser(){
+  let c=0,b=-1;
+  for(let i=0;i<5;i++){ if(playerTeam[i].userData.fouledOut) continue;
+    const r=rosterFor('user',i).ft||70; if(r>b){b=r;c=i;} }
+  return c;
+}
+function coachCycleCloser(){
+  if(!coachMode||!run||paused||gameEnded) return;
+  coachCloser=(coachCloser+1)%5;
+  if(playerTeam[coachCloser].userData.fouledOut) coachCloser=coachBestCloser();
+  coachFocusStar=true;
+  const sel=$('coachOffense'); if(sel) sel.value='isolation';
+  playCall='isolation'; coachPlayKey='isolation';
+  const r=rosterFor('user',coachCloser);
+  coachSetReport(`Closer: ${r.name}`,'Late-clock touches run through them. Isolation spacing.');
+  CoachClipboard.sync();
+}
+function coachFeedCloser(){
+  if(!coachMode||!run||paused||gameEnded) return false;
+  if(ballTeam!=='user'||shot||passFlight) return false;
+  const c=coachCloser;
+  if(playerTeam[c].userData.fouledOut) return false;
+  if(ballHandler===c) return true;
+  playerTeam.forEach((p,i)=>p.userData.hasBall=(i===c));
+  ballHandler=c; active=c;
+  coachSetReport('Feed the closer',`${rosterFor('user',c).name} has the ball with the game on the line.`);
+  return true;
+}
+/* Clutch auto-feed: called from onPossession when the game is tight late. */
+function coachClutchCheck(){
+  if(gameQuarter!==4||gameSeconds>120) return;
+  if(Math.abs(scoreUser-scoreCPU)>8) return;
+  if(ballTeam==='user'&&!shot&&!passFlight&&ballHandler!==coachCloser&&Math.random()<.5)
+    coachFeedCloser();
+}
+
+function coachFoulNow(){
+  if(!coachMode||!run||paused||gameEnded) return;
+  const ok=gameQuarter===4&&gameSeconds<75&&scoreUser<scoreCPU&&ballTeam==='cpu'&&!shot&&!passFlight;
+  if(!ok){ coachSetReport('No foul needed','Intentional fouls are for trailing late with them holding the ball.'); return; }
+  const h=getHandler();
+  let best=0,bd=1e9;
+  playerTeam.forEach((p,i)=>{ if(p.userData.fouledOut) return;
+    const d=p.position.distanceTo(h.position); if(d<bd){bd=d;best=i;} });
+  gameSeconds=Math.max(0,gameSeconds-4);          // free throws eat clock
+  resolveShootingFoul({foul:true,team:'cpu',handler:ballHandler,foulerIndex:best,points:2},false);
+  switchPossession('cpu');                        // they keep the ball after FTs
+  const fouler=rosterFor('user',best);
+  const foulCount=playerTeam[best].userData.fouls||0;
+  coachSetReport('Intentional foul',`${fouler.name} (${foulCount} fouls) stops the clock. They shoot two.`);
+  updateUI(); CoachClipboard.sync();
+}
+
+/* ------------------------- 11. COACHCLIPBOARD CONTROLLER ------------------------- */
+const CoachClipboard = {
+
+  /* Build the panel. Called from begin() when coach mode activates. */
+  install(){
+    if(!document.getElementById('ccCoachCss')){
+      const st=document.createElement('style');
+      st.id='ccCoachCss'; st.textContent=COACH_CLIPBOARD_CSS;
+      document.head.appendChild(st);
+    }
+    const deck=$('coachDeck');
+    deck.innerHTML=COACH_CLIPBOARD_HTML;
+
+    // play buttons
+    $('ccPlays').innerHTML=Object.entries(COACH_PLAYS).map(([k,p])=>
+      `<button class="cc-btn" data-play="${k}"><span class="k">${p.key}</span><span class="t">${p.label}</span><span class="s">${p.sub}</span></button>`).join('');
+    deck.querySelectorAll('#ccPlays .cc-btn').forEach(b=>b.onclick=()=>coachCallPlay(b.dataset.play));
+
+    // scheme buttons
+    $('ccSchemes').innerHTML=Object.entries(COACH_SCHEMES).map(([k,s])=>
+      `<button class="cc-btn" data-scheme="${k}"><span class="k">${s.key}</span><span class="t">${s.label}</span><span class="s">${s.sub}</span></button>`).join('');
+    deck.querySelectorAll('#ccSchemes .cc-btn').forEach(b=>b.onclick=()=>coachSetScheme(b.dataset.scheme));
+
+    // tempo segmented
+    $('ccTempo').innerHTML=Object.entries(COACH_TEMPOS).map(([k,t])=>
+      `<button class="cc-btn" data-tempo="${k}"><span class="k">${t.key}</span><span class="t">${t.label}</span><span class="s">${t.sub}</span></button>`).join('');
+    deck.querySelectorAll('#ccTempo .cc-btn').forEach(b=>b.onclick=()=>coachSetTempo(b.dataset.tempo));
+
+    // bench decisions
+    $('ccTimeout').onclick=()=>{ const a=coachTimeoutAdvisor(); coachTimeout(a?a.label+' — called':null); };
+    $('ccSubs').onclick=()=>{ $('ccRotationDrawer').classList.toggle('open'); };
+    $('ccFoul').onclick=()=>coachFoulNow();
+    $('ccCloser').onclick=()=>coachCycleCloser();
+    $('ccMatchups').onclick=()=>{ $('ccMatchupDrawer').classList.toggle('open'); };
+    $('ccCam').onclick=()=>{ coachCamWide=!coachCamWide;
+      coachSetReport('Camera changed',coachCamWide?'High sideline broadcast view.':'Lower tactical broadcast view.'); };
+    $('ccHelpBtn').onclick=()=>$('ccHelp').classList.toggle('show');
+    $('ccAutoMatch').onclick=(e)=>{ e.stopPropagation(); coachAutoMatchups(); };
+
+    // re-wire hidden legacy controls so any game code touching them keeps working
+    const co=$('coachOffense'); if(co) co.onchange=()=>{ const v=co.value;
+      const hit=Object.keys(COACH_PLAYS).find(k=>COACH_PLAYS[k].base===v);
+      if(hit) coachCallPlay(hit); };
+    const ct=$('coachTempo'); if(ct) ct.onchange=()=>coachSetTempo(ct.value);
+    const cd=$('coachDefense'); if(cd) cd.onchange=()=>{ const v=cd.value;
+      if(COACH_SCHEMES[v]) coachSetScheme(v); };
+
+    // keyboard (bound once)
+    if(!coachKeysBound){
+      coachKeysBound=true;
+      document.addEventListener('keydown', CoachClipboard.keys, true);
+    }
+
+    this.renderRotation();
+    this.renderMatchups();
+    this.sync();
+  },
+
+  /* Fresh game state. Called from begin(). */
+  reset(){
+    coachPlayKey='motion'; coachScheme='man'; coachTempoKey='balanced';
+    coachMatchups=[0,1,2,3,4]; coachScoreLog=[]; coachSelectedCourt=-1;
+    coachCloser=coachBestCloser(); coachAdvisorCache={timeout:null,late:null};
+    const so=$('coachOffense'); if(so) so.value='motion';
+    const st=$('coachTempo'); if(st) st.value='balanced';
+    const sd=$('coachDefense'); if(sd) sd.value='man';
+    const rd=$('ccRotationDrawer'); if(rd) rd.classList.remove('open');
+    const md=$('ccMatchupDrawer'); if(md) md.classList.remove('open');
+    this.renderRotation(); this.renderMatchups(); this.sync();
+  },
+
+  /* Live refresh. Called from updateUI(). */
+  sync(){
+    if(!coachMode) return;
+    const u=chosenTeam('user'), c=chosenTeam('cpu');
+    const mm=String(Math.floor(gameSeconds/60)), ss=String(Math.floor(gameSeconds%60)).padStart(2,'0');
+    const sc=$('ccScore'); if(sc) sc.innerHTML=`${u.abbr} <b>${scoreUser}</b> &nbsp;·&nbsp; ${c.abbr} <b>${scoreCPU}</b>`;
+    const ck=$('ccClock'); if(ck) ck.textContent=`${mm}:${ss}`;
+    const q=$('ccQ'); if(q) q.textContent=`Q${gameQuarter}`;
+    const to=$('ccTOCount'); if(to) to.textContent=coachTimeouts;
+    const t2=$('coachTO'); if(t2) t2.textContent=`TIMEOUTS ${coachTimeouts}`;
+    const sb=$('ccSubCount'); if(sb) sb.textContent=coachSubCount;
+    const s2=$('coachSubs'); if(s2) s2.textContent=`SUBS ${coachSubCount}/5`;
+    const cn=$('ccCloserName'); if(cn) cn.textContent=rosterFor('user',coachCloser).name.split(' ').slice(-1)[0].toUpperCase();
+
+    document.querySelectorAll('#ccPlays .cc-btn').forEach(b=>b.classList.toggle('on',b.dataset.play===coachPlayKey));
+    document.querySelectorAll('#ccSchemes .cc-btn').forEach(b=>b.classList.toggle('on',b.dataset.scheme===coachScheme));
+    document.querySelectorAll('#ccTempo .cc-btn').forEach(b=>b.classList.toggle('on',b.dataset.tempo===coachTempoKey));
+
+    // timeout advisor pulse
+    const ta=coachTimeoutAdvisor();
+    const tb=$('ccTimeout');
+    if(tb){ const fire=!!ta&&coachTimeouts>0;
+      tb.classList.toggle('warn',fire); tb.classList.toggle('pulse',fire); }
+
+    // foul button only live when it makes sense
+    const canFoul=gameQuarter===4&&gameSeconds<75&&scoreUser<scoreCPU&&ballTeam==='cpu';
+    const fb=$('ccFoul'); if(fb) fb.disabled=!canFoul;
+
+    // advisor line
+    const la=coachLateAdvisor();
+    const adv=$('ccAdvisor');
+    if(adv){
+      const parts=[];
+      if(ta) parts.push(`<b>TIMEOUT:</b> ${ta.label} — ${ta.reason} <span class="go">[D]</span>`);
+      if(la) parts.push(`<b>LATE:</b> ${la.label} — ${la.reason}${la.action==='foul'?' <span class="go">[G]</span>':la.action==='timeout'?' <span class="go">[D]</span>':la.action==='play'?' <span class="go">[5]</span>':''}`);
+      adv.innerHTML=parts.length?parts.join('<br>'):'Coaching advisor is watching the game…';
+    }
+    coachAdvisorCache={timeout:ta,late:la};
+  },
+
+  /* Called from switchPossession(). Tracks runs, drains stamina, clutch feed. */
+  onPossession(){
+    if(!coachMode||!run) return;
+    coachScoreLog.push({t:gameSeconds, diff:scoreUser-scoreCPU});
+    if(coachScoreLog.length>60) coachScoreLog.shift();
+    // light rotation pressure (only when the sim's own fatigue is enabled).
+    // COACH-SIM: taxes starters ~2 stamina per possession so rotation matters.
+    // If the sim already drains starters in coach mode, set the tax to 0.
+    const COACH_STAMINA_TAX=2.2;
+    if(settings.fatigue){
+      for(let i=0;i<5;i++){ const p=playerTeam[i];
+        if(p.userData.fouledOut) continue;
+        p.userData.stamina=Math.max(5,p.userData.stamina-COACH_STAMINA_TAX);
+      }
+    }
+    coachClutchCheck();
+    this.renderRotation();
+    this.sync();
+  },
+
+  /* ---- rotation drawer ---- */
+  renderRotation(){
+    const court=$('ccCourt'); if(!court) return;
+    court.innerHTML=playerTeam.map((p,i)=>{
+      const r=p.userData.roster||rosterFor('user',i);
+      const st=Math.round(p.userData.stamina), fl=p.userData.fouls||0;
+      const tags=[];
+      if(p.userData.fouledOut) tags.push('<span class="cc-tag out">OUT</span>');
+      else{ if(st<30) tags.push('<span class="cc-tag tired">TIRED</span>');
+            if(fl>=4) tags.push('<span class="cc-tag foul">FOUL TROUBLE</span>'); }
+      const dots=Array.from({length:6},(_,d)=>`<i class="${d<fl?'f':''} ${fl>=4&&d===fl-1?'trouble':''}"></i>`).join('');
+      return `<div class="cc-prow ${coachSelectedCourt===i?'sel':''}" data-ci="${i}">
+        <div class="nm"><b>#${r.number} ${r.name}</b><span>${r.pos} · RTG ${r.ft||'—'}</span></div>
+        ${tags.join('')}<div class="cc-stam"><i style="width:${st}%"></i></div>
+        <div class="cc-fouls">${dots}</div></div>`;
+    }).join('');
+    court.querySelectorAll('.cc-prow').forEach(row=>row.onclick=()=>{
+      coachSelectedCourt=Number(row.dataset.ci); this.renderRotation(); });
+
+    const benchEl=$('ccBench');
+    const bench=(chosenTeam('user').bench||[]);
+    benchEl.innerHTML=bench.map((e,j)=>{
+      const r={name:e[0],number:e[1],pos:e[2],ft:e[3]};
+      return `<div class="cc-prow" data-bi="${j}">
+        <div class="nm"><b>#${r.number} ${r.name}</b><span>${r.pos} · RTG ${r.ft||'—'}</span></div>
+        <span class="cc-tag" style="background:#12301c;color:#d8ff48">SUB IN</span></div>`;
+    }).join('')+`<button class="cc-btn" id="ccQuickSub" style="width:100%;margin-top:4px"><span class="t">QUICK SUB — BENCH BEST FOR MOST TIRED</span></button>`;
+    benchEl.querySelectorAll('.cc-prow').forEach(row=>row.onclick=()=>{
+      const bi=Number(row.dataset.bi);
+      const ci=coachSelectedCourt>=0?coachSelectedCourt:(()=>{
+        let c=0,s=-1;
+        for(let i=0;i<5;i++){ if(playerTeam[i].userData.fouledOut) continue;
+          const v=(100-playerTeam[i].userData.stamina)+(playerTeam[i].userData.fouls>=4?30:0);
+          if(v>s){s=v;c=i;} } return c; })();
+      coachSubstitution(ci,bi);
+    });
+    const qs=$('ccQuickSub'); if(qs) qs.onclick=()=>coachQuickSub();
+  },
+
+  /* ---- matchup drawer ---- */
+  renderMatchups(){
+    const el=$('ccMatchRows'); if(!el) return;
+    el.innerHTML=[0,1,2,3,4].map(i=>{
+      const a=rosterFor('user',i), b=rosterFor('cpu',coachMatchups[i]??i);
+      return `<div class="cc-mrow" data-mi="${i}">
+        <span class="who">#${a.number} ${a.name}</span><span class="vs">GUARDS</span>
+        <span class="tgt">#${b.number} ${b.name}</span></div>`;
+    }).join('');
+    el.querySelectorAll('.cc-mrow').forEach(row=>row.onclick=()=>coachCycleMatchup(Number(row.dataset.mi)));
+  },
+
+  /* ---- keyboard: the fast clipboard ---- */
+  keys(e){
+    if(!coachMode||!run||paused||gameEnded) return;
+    if(e.key==='Escape') return;                                   // game handles pause
+    const t=e.target;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA')) return;
+    const k=e.key.length===1?e.key.toLowerCase():e.key;
+    let used=true;
+    const playHit=Object.keys(COACH_PLAYS).find(pk=>COACH_PLAYS[pk].key===k);
+    if(playHit) coachCallPlay(playHit);
+    else if(k==='q') coachSetScheme('man');
+    else if(k==='w') coachSetScheme('zone23');
+    else if(k==='e') coachSetScheme('zone32');
+    else if(k==='r') coachSetScheme('press');
+    else if(k==='t') coachSetScheme('trap');
+    else if(k==='z') coachSetTempo('patient');
+    else if(k==='x') coachSetTempo('balanced');
+    else if(k==='c') coachSetTempo('fast');
+    else if(k==='d'){ const a=coachTimeoutAdvisor(); coachTimeout(a?a.label:null); }
+    else if(k==='n'){ const d=$('ccRotationDrawer'); if(d) d.classList.toggle('open'); }
+    else if(k==='m'){ const d=$('ccMatchupDrawer'); if(d) d.classList.toggle('open'); }
+    else if(k==='f') coachCycleCloser();
+    else if(k==='g') coachFoulNow();
+    else if(k==='v'){ coachCamWide=!coachCamWide;
+      coachSetReport('Camera changed',coachCamWide?'High sideline broadcast view.':'Lower tactical broadcast view.'); }
+    else if(k==='h'){ const h=$('ccHelp'); if(h) h.classList.toggle('show'); }
+    else used=false;
+    if(used){ e.preventDefault(); e.stopPropagation(); }
+  },
+
+  /* Hooks consumed by the game (integration steps 4-5). */
+  matchup(i){ return coachMatchup(i); },
+  defenderTarget(p,i,offense,mark,ballP,dir){ return coachDefenderTarget(p,i,offense,mark,ballP,dir); },
+  playParams(){ return coachPlayParams(); },
+  tempoParams(){ return coachTempoParams(); },
+};
+
+/* Export for non-module contexts (harmless inside the module too). */
+if(typeof window!=='undefined'){ window.CoachClipboard=CoachClipboard; }
+
+
+
+/* ===== INLINED: 08-wiring.js ===== */
+/* ============================================================================
+   COURTSIDE 27 — COACH SYSTEMS WIRING
+   Connects the 7 inlined coach modules to the live game. All hooks are
+   defensive (try/catch + existence checks) so a module failure can never
+   break the core game loop.
+   ========================================================================== */
+
+/* ---- CPU coach host state ---- */
+let _cpuCoach = null;
+let cpuTimeouts = 5, cpuSubsLeft = 5, cpuDefScheme = 'man', cpuTempo = 'balanced', cpuFoulPlan = { active: false };
+let _lastQuarterSeen = 1, _ccSyncAt = 0;
+
+/* ---- gameAPI adapter for CPUCoach ---- */
+function cpuGameAPI(){
+  return {
+    getScoreUser: () => scoreUser,
+    getScoreCPU: () => scoreCPU,
+    getGameSeconds: () => (settings.quarterMinutes*60*4) - gameSeconds,
+    getQuarterLength: () => settings.quarterMinutes*60,
+    getGameQuarter: () => gameQuarter,
+    getBallTeam: () => ballTeam,
+    getShotSeconds: () => shotSeconds,
+    getPlayerTeam: () => playerTeam,
+    getCpuTeam: () => cpuTeam,
+    getCpuBench: () => (chosenTeam('cpu').bench || []),
+    getCpuSubsLeft: () => cpuSubsLeft,
+    getCpuTeamId: () => ($('awayTeam') ? $('awayTeam').value : 'cpu'),
+    getCpuTeamName: () => chosenTeam('cpu').name,
+    rosterFor: (s,i) => rosterFor(s,i),
+    isPaused: () => paused,
+    isGameOver: () => gameEnded,
+    isFatigueOn: () => !!settings.fatigue,
+    isUserShootingFT: () => !!freeThrowMode && freeThrowMode.team === 'user',
+    applyDefensiveScheme: (scheme, opts) => {
+      const map = { man:65, hedge:80, 'trap-pnr':88, 'trap-star':84,
+        'zone-2-3':78, chase:60, 'double-post':85, 'shade-iso':75,
+        'protect-paint':90, pack:95, press:70 };
+      settings.helpDefense = (map[scheme] !== undefined) ? map[scheme] : 65;
+      doubleTeamMode = /trap|double/.test(scheme);
+      cpuDefScheme = scheme;
+    },
+    setCpuTempo: (t) => { cpuTempo = t; },
+    setFoulStrategy: (s) => { cpuFoulPlan = s || { active:false }; },
+    cpuCallTimeout: (title, detail, left) => {
+      if (paused || gameEnded || !run) return;
+      cpuTimeouts = Math.max(0, left);
+      shot = null; passFlight = null; shotSeconds = 24; possessionSeconds = 0;
+      paused = true;
+      $('pause').classList.remove('hidden');
+      $('pauseText').textContent = `CPU TIMEOUT · ${title} · ${scoreUser}–${scoreCPU} · ${Math.floor(gameSeconds/60)}:${String(Math.floor(gameSeconds%60)).padStart(2,'0')} remaining.`;
+      $('resume').textContent = 'RESUME GAME';
+      showToast('CPU TIMEOUT · ' + title, detail, 1600);
+      coachOnTimeout('cpu');
+    },
+    cpuSubstitute: (outIdx, reason) => {
+      const bench = chosenTeam('cpu').bench || [];
+      if (!bench.length || cpuSubsLeft <= 0) return false;
+      const model = cpuTeam[outIdx];
+      if (!model || model.userData.fouledOut) return false;
+      const entry = bench[Math.floor(Math.random()*bench.length)];
+      const previous = model.userData.roster ? model.userData.roster.name : rosterFor('cpu', outIdx).name;
+      model.userData.roster = { name: entry[0], number: entry[1], pos: entry[2], ft: entry[3] };
+      try {
+        const draw = (canvas, fn) => { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); fn(ctx); };
+        draw(model.userData.numberCanvas, ctx => { ctx.fillStyle='#f4f4e9'; ctx.font='900 90px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(entry[1]),64,65); });
+        model.userData.numberTexture.needsUpdate = true;
+        draw(model.userData.nameCanvas, ctx => { ctx.fillStyle='#f4f4e9'; ctx.font='900 26px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(entry[0].toUpperCase(),128,24); });
+        model.userData.nameTexture.needsUpdate = true;
+      } catch(e){}
+      cpuSubsLeft--;
+      try {
+        Commentary.onSub(entry[0], previous, chosenTeam('cpu').name);
+        const lineup = cpuTeam.map((p,i)=>p.userData.roster?p.userData.roster.name:rosterFor('cpu',i).name);
+        CourtsideStats.setLineup('away', lineup);
+      } catch(e){}
+      return true;
+    },
+    announce: (title, detail, kind) => {
+      try { showToast(title, detail, 1500); } catch(e){}
+      try { coachSetReport(title, detail); } catch(e){}
+    }
+  };
+}
+
+/* ---- master init, called from begin() when coachMode is on ---- */
+function initCoachSystems(){
+  try {
+    if (window.BD) BD.init({ debug:false });
+  } catch(e){ console.warn('[coach] BD init', e); }
+  try {
+    if (window.PlayVisuals) PlayVisuals.init({ THREE: THREE, scene: scene });
+  } catch(e){ console.warn('[coach] PlayVisuals init', e); }
+  try {
+    if (window.CourtsideStats) {
+      const mapRoster = (side) => chosenTeam(side).roster.map(r => ({ name:r[0], number:r[1], pos:r[2] }));
+      CourtsideStats.init({
+        home: { abbr: chosenTeam('user').abbr, name: chosenTeam('user').name, color: chosenTeam('user').color, roster: mapRoster('user') },
+        away: { abbr: chosenTeam('cpu').abbr, name: chosenTeam('cpu').name, color: chosenTeam('cpu').color, roster: mapRoster('cpu') }
+      });
+      CourtsideStats.setLineup('home', playerTeam.map((p,i)=>rosterFor('user',i).name));
+      CourtsideStats.setLineup('away', cpuTeam.map((p,i)=>rosterFor('cpu',i).name));
+    }
+  } catch(e){ console.warn('[coach] Stats init', e); }
+  try {
+    if (window.Momentum) Momentum.reset();
+  } catch(e){}
+  try {
+    if (window.CoachClipboard) { CoachClipboard.install(); CoachClipboard.reset(); }
+  } catch(e){ console.warn('[coach] Clipboard', e); }
+  try {
+    if (window.CPUCoach && !_cpuCoach) {
+      _cpuCoach = new CPUCoach(cpuGameAPI(), {});
+      _cpuCoach.onGameStart();
+    } else if (_cpuCoach) {
+      _cpuCoach.onGameStart();
+    }
+    try{ window._cpuCoach = _cpuCoach; }catch(e){}
+  } catch(e){ console.warn('[coach] CPU coach', e); }
+  try {
+    if (window.Commentary) Commentary.onGameStart(chosenTeam('user').name, chosenTeam('cpu').name);
+  } catch(e){}
+  _lastQuarterSeen = 1;
+  cpuTimeouts = 5; cpuSubsLeft = 5; cpuDefScheme = 'man'; cpuTempo = 'balanced'; cpuFoulPlan = { active:false };
+}
+
+/* ---- shot resolution fan-out ---- */
+function coachOnShotResolved(s, made, team, pts, typ){
+  if (!coachMode) return;
+  try {
+    const hIdx = s.handler || 0;
+    const r = rosterFor(team, hIdx);
+    const name = r.name, abbr = chosenTeam(team).abbr, teamName = chosenTeam(team).name;
+    const cmTeam = (team === 'user') ? 'home' : 'away';
+    const clutch = (gameQuarter >= 4 && gameSeconds < 120 && Math.abs(scoreUser - scoreCPU) <= 8);
+    const atBuzzer = gameSeconds <= 1.6;
+    const ctx = { clutch: clutch, atBuzzer: atBuzzer };
+    if (window.Momentum && made) Momentum.onScore(team, pts, typ);
+    if (window.Commentary) {
+      if (atBuzzer && made) Commentary.onBuzzerBeater(name, pts, true, ctx);
+      else if (made && pts === 3) Commentary.onThreeMade(name, abbr, teamName, ctx);
+      else if (made && typ === 'DUNK') Commentary.onDunk(name, abbr, teamName, ctx);
+      else if (made && typ === 'LAYUP') Commentary.onLayup(name, abbr, teamName, ctx);
+      else if (made) Commentary.onTwoMade(name, abbr, teamName, ctx);
+      else if (clutch) Commentary.onClutchShot(name, false, ctx);
+      else Commentary.onMiss(name, abbr, teamName, pts === 3, ctx);
+    }
+    if (window.CourtsideStats) {
+      if (made) CourtsideStats.score({ team: cmTeam, player: name, points: pts, kind: typ });
+      else CourtsideStats.miss({ team: cmTeam, player: name, points: pts, kind: typ });
+    }
+    if (window.PlayVisuals && s.start) {
+      try { PlayVisuals.recordShot(s.start.x, s.start.z, made, team, hIdx); } catch(e){}
+    }
+   
