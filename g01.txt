@@ -1,0 +1,1239 @@
+asher'?.9:.79;base+=(career.attrs.shooting-65)*.0025+(career.attrs.finishing-65)*(isFinish?.003:.0006);let range=isFinish?1:Math.max(.25,1-dist/21);let quality=isFinish?1:Math.max(.08,1-Math.abs(charge-.7)*2.15);let greenRelease=!isFinish&&Math.abs(charge-.7)<=.035;let contest=defDist<3.4?Math.max(.15,1-(3.4-defDist)/3.8):1;let typeAdjust=isFinish?settings.layupSuccess/50:(dist>7.1?settings.threePointSuccess/50:dist<3.4?settings.insideSuccess/50:settings.midRangeSuccess/50);let chance=Math.max(.02,Math.min(.97,base*range*(isFinish?1.08:1.36)*quality*contest*typeAdjust*(settings.userShotSuccess/50)));if(greenRelease)chance=Math.min(.99,chance+.13);if(isFinish&&build==='slasher'&&dist<1.35)chance*=settings.dunkSuccess/50;if(settings.clutchFactor&&!practice&&(gameSeconds%(settings.quarterMinutes*60))<30&&Math.abs(scoreUser-scoreCPU)<=5)chance=Math.min(.99,chance+.06);if(difficulty==='rookie')chance=Math.min(.98,chance+.11);if(difficulty==='hall')chance*=.83;let foulChance=settings.nbaRules&&defDist<1.5?(settings.shootingFoul/100)*(settings.foulSensitivity/50)*(defDist<1.1?.28:.12):0;let shootingFoul=Math.random()<foulChance;
+let releaseCharge=charge,made=Math.random()<chance,target=hoop.pos.clone();if(made){target.y=2.36}else{target.y=3.14;target.x+=(Math.random()<.5?-1:1)*(.26+Math.random()*.62);target.z+=(Math.random()<.5?-1:1)*(.22+Math.random()*.55)}careerStats.attempts++;sfx('shoot');shot={start:p.position.clone().add(V(0,1.65,.05)),end:target,t:0,duration:isFinish?.68:1.0,made,points,team:'user',handler:active,kind:isFinish?(dist<1.3&&build==='slasher'?'DUNK':'LAYUP'):'JUMPER',release:quality,greenRelease,foul:shootingFoul,foulerIndex:nearestDef.i};charging=false;charge=0;$('meterWrap').style.display='none';$('meterFill').style.width='0%';shotCooldown=.85;shotSeconds=Math.max(0,shotSeconds);setState(greenRelease?'GREEN RELEASE':isFinish?'AT THE RIM':'SHOT RELEASED',isFinish?'Finish through the contest.':`${greenRelease?'Perfect timing':releaseCharge<.7?'Early release':'Late release'} · ${points===3?'THREE-POINT ATTEMPT':'MID-RANGE ATTEMPT'}`);$('toast').classList.add('hidden');if(isFinish)showToast(dist<1.3&&build==='slasher'?'GOING UP':'LAYUP',`Defender gap ${defDist.toFixed(1)} m`,650)}
+function resolveShootingFoul(s,shotMade){if(!s.foul||!settings.nbaRules)return;let defenders=s.team==='user'?cpuTeam:playerTeam,defender=defenders[s.foulerIndex??0];if(defender){defender.userData.fouls=(defender.userData.fouls||0)+1;try{if(coachMode){var fside=s.team==='user'?'away':'home';var fn=defender.userData.roster?defender.userData.roster.name:rosterFor(s.team==='user'?'cpu':'user',s.foulerIndex||0).name;if(window.CourtsideStats)CourtsideStats.foul({team:fside,player:fn});if(window.Commentary){var sn=rosterFor(s.team,s.handler||0).name;Commentary.onFoul(fn,sn,true,{});}}}catch(e){}if(settings.foulOut&&defender.userData.fouls>=6){defender.userData.fouledOut=true;defender.visible=false;if(defenders===playerTeam&&defender===getActive()){active=playerTeam.findIndex(q=>!q.userData.fouledOut&&q!==defender);if(active<0)active=0;if(ballTeam==='user'){ballHandler=active;playerTeam.forEach((q,i)=>q.userData.hasBall=i===active)}}showToast('FOULED OUT',`${defender.userData.roster.name} reached six fouls.`,1100);}}let attempts=shotMade?1:(s.points===3?3:2),meta=rosterFor(s.team,s.handler),made=0;for(let i=0;i<attempts;i++){let p=settings.realPlayerFT?(meta.ft/100):(settings.freeThrowSuccess/100);if(settings.clutchFactor&&!practice&&(gameSeconds%(settings.quarterMinutes*60))<30&&Math.abs(scoreUser-scoreCPU)<=5)p=Math.min(.99,p+.05);if(Math.random()<p)made++;}if(s.team==='user'){scoreUser+=made;careerStats.points+=made}else scoreCPU+=made;showToast(shotMade?'FOUL · AND ONE':'SHOOTING FOUL',`${attempts} free throw${attempts===1?'':'s'} · ${made} made`,1100);setState('SHOOTING FOUL',`${meta.name} · ${made}/${attempts} free throws`)}
+function tryContactFoul(p,def){if(!settings.nbaRules||contactCooldown>0)return;let d=p.position.distanceTo(def.position);if(d>.72)return;contactCooldown=.9;let contactScale=(keys.x||keys.X)?(settings.chargingFoul/50):(settings.blockingFoul/50);let chance=(settings.foulSensitivity/100)*contactScale*.1;if(Math.random()<chance){if(keys.x||keys.X){switchPossession('cpu');showToast('CHARGE TAKEN','Offensive foul · possession changes',1000);setState('CHARGE','You drew the offensive foul.')}else{showToast('CONTACT','Play through the body contact.',650)}}}
+function pumpFake(){if(!run||paused||gameEnded||shot||ballTeam!=='user'||active!==ballHandler)return;charging=false;charge=0;let p=getActive();p.userData.torso.rotation.x=-.22;p.userData.limbs[0].rotation.z=.48;p.userData.limbs[2].rotation.z=-.48;cpuTeam.forEach(d=>{if(d.position.distanceTo(p.position)<3.0)d.userData.stun=.18});setState('PUMP FAKE','Freeze the defender, then drive or shoot.');showToast('PUMP FAKE','Defender reaction window created.',550)}
+function spinMove(kind='spin'){if(!run||paused||gameEnded||shot||ballTeam!=='user'||active!==ballHandler)return;let p=getActive(),dir=moveInput();if(dir.lengthSq()<.01)dir.set(1,0,0);let factor=kind==='hop'?1.15:kind==='behind'?.8:1.0;p.rotation.y+=kind==='behind'?Math.PI:Math.PI*.78;p.position.addScaledVector(dir,kind==='hop'?.85:.55);p.position.x=THREE.MathUtils.clamp(p.position.x,-13.2,13.2);p.position.z=THREE.MathUtils.clamp(p.position.z,-7,7);if(kind==='hop'){p.position.y=.18;p.userData.limbs[0].rotation.z=.5;p.userData.limbs[2].rotation.z=-.5;}cpuTeam.forEach(d=>{if(d.position.distanceTo(p.position)<1.65)d.userData.stun=kind==='hop'?.32:.25});sfx('cross');setState(kind==='hop'?'HOP STEP':kind==='behind'?'BEHIND THE BACK':'SPIN MOVE','Separate IsoMotion-style moves from turbo speed.');}
+function callPlay(){playCall=playCall==='motion'?'pick-roll':playCall==='pick-roll'?'isolation':'motion';screenTimer=playCall==='pick-roll'?4:0;setState('PLAY CALL',playCall==='pick-roll'?'Pick and roll · screener moves to ball side':playCall==='isolation'?'Isolation · teammates spread out':'Motion offense · move the ball');showToast('OFFENSIVE SET',playCall.toUpperCase().replace('-',' '),650);try{if(typeof coachOnPlayCall==='function')coachOnPlayCall(playCall);}catch(e){}}
+function setScreen(){if(!run||paused||gameEnded||ballTeam!=='user'||active!==ballHandler)return;let screenIndex=(active+1)%5,screener=playerTeam[screenIndex],handler=getActive(),near=cpuTeam.slice().sort((a,b)=>a.position.distanceTo(handler.position)-b.position.distanceTo(handler.position))[0];let d=near.position.clone().sub(handler.position);if(d.lengthSq()<.1)d.set(1,0,0);d.normalize();screener.position.copy(handler.position).addScaledVector(d,1.05);screener.position.z=THREE.MathUtils.clamp(screener.position.z,-6.5,6.5);screener.userData.stun=1.0;near.userData.stun=.5;screenTimer=1.0;playCall='pick-roll';setState('SCREEN SET',`${rosterFor('user',screenIndex).name} sets a screen.`);showToast('PICK AND ROLL','Use the screen to turn the corner.',750)}
+function iconPass(index,style='chest'){passBall(index,style)}
+function blockAttempt(){if(!run||paused||gameEnded||ballTeam!=='cpu'||!shot||shot.team!=='cpu'||playerBlockCooldown>0)return;playerBlockCooldown=.6;let p=getActive(),d=p.position.distanceTo(getHandler().position),chance=d<2.0?.28:d<3.0?.12:.025;if(settings.gameDifficulty>65)chance*=1.15;if(settings.goaltending&&shot.t/shot.duration>.64){scoreCPU+=shot.points;shot=null;switchPossession('user',true);updateUI();showToast('GOALTENDING',`Basket counts`,900);setState('GOALTENDING','Defender touched the ball on its way down.');return}if(Math.random()<chance){shot.made=false;shot.foul=false;showToast('BLOCK','Shot attempt rejected.',800);setState('BLOCK','You got to the release.')}else{setState('CONTEST','Hands up at the release point.')}}
+function attemptSteal(){if(!run||paused||gameEnded||ballTeam!=='cpu'||shot||stealCooldown>0)return;stealCooldown=.42;let p=getActive(),handler=getHandler(),d=p.position.distanceTo(handler.position);let stealChance=(difficulty==='rookie'?.52:difficulty==='pro'?.34:.22)*(settings.stealSuccess/50)+(career.attrs.defense-65)*.003;if(d<1.65&&Math.random()<Math.max(.08,Math.min(.75,stealChance))){sfx('steal');switchPossession('user');careerStats.steals++;ballHandler=active;playerTeam.forEach((q,i)=>q.userData.hasBall=i===active);setState('STEAL','Hands active. Transition opportunity.');showToast('STEAL','You picked the pocket.',800)}else{p.userData.stun=.22;if(settings.nbaRules&&d<1.8&&Math.random()<(settings.reachingFoul/100)*.13){shotSeconds=24;setState('REACHING FOUL','Non-shooting foul · possession retained.');showToast('REACHING FOUL','Inbound after the whistle.',900)}else setState('REACH-IN','Too far away or the handle was protected.')} }
+function choosePlayer(){if(!run||paused||gameEnded)return;active=(active+1)%5;if(ballTeam==='user'){ballHandler=active;playerTeam.forEach((p,i)=>p.userData.hasBall=i===active);setState('PLAYER SWITCH',`Ball handler: ${rosterFor('user',active).name}.`)}else{setState('DEFENDER SWITCH',`Now controlling ${rosterFor('user',active).name}.`) }setActivePlayerMeta()}
+function personAnimate(g,vel,dt,phase,hasBall){const safeDt=Math.max(dt,.001),speed=vel.length(),moving=speed>.22;g.userData.speed=speed;g.userData.velocity.copy(vel);const gaitPhase=(g.userData.aiPhase=(g.userData.aiPhase||0)+safeDt*(moving?12:3));g.userData.limbs.forEach((limb,i)=>{let swing=0;if(moving){if(i===0)swing=Math.sin(gaitPhase+Math.PI)*.34;else if(i===1)swing=Math.sin(gaitPhase)*.5;else if(i===2)swing=Math.sin(gaitPhase)*.34;else swing=Math.sin(gaitPhase+Math.PI)*.5;}limb.rotation.x=swing;});
+let elb=g.userData.elbows,kns=g.userData.knees;
+if(elb&&kns){for(let ji=0;ji<2;ji++){let ph=ji===0?0:Math.PI;
+elb[ji].rotation.x=hasBall?-.55-Math.abs(Math.sin(gaitPhase*2+ph))*.3:(moving?-.3-Math.abs(Math.sin(gaitPhase+ph))*.28:-.22);
+kns[ji].rotation.x=moving?.12+Math.max(0,Math.sin(gaitPhase-1.1+ph))*.95:.09;}}
+g.userData.torso.rotation.z=moving?Math.sin(gaitPhase)*.024:0;g.position.y=Math.abs(Math.sin(gaitPhase*2))*(moving?.04:.004);g.userData.head.rotation.z=moving?Math.sin(gaitPhase)*.012:0;g.userData.torso.rotation.x=hasBall&&moving?.055+Math.sin(gaitPhase*1.8)*.03:(moving?-.025:0)}
+function teamAI(dt){let users=playerTeam,cpus=cpuTeam;let offense=ballTeam==='user'?users:cpus,defense=ballTeam==='user'?cpus:users,dir=ballTeam==='user'?1:-1,ballP=getHandler().position;
+offense.forEach((p,i)=>{if(p===getHandler())return;let lane=i===1?-4.5:i===2?4.5:i===3?-6.0:6.0;let target=V(THREE.MathUtils.clamp(ballP.x+dir*(i<3?3.1:5.3),-11.8,11.8),0,THREE.MathUtils.clamp(lane,-5.8,5.8));if(Math.abs(p.position.x)>10)target.x=dir*8;let to=target.sub(p.position);let speed=3.4*(settings.gameSpeed/50)*eraGameplay.pace;if(playCall==='pick-roll'&&screenTimer>0&&i===1)speed*=1.18;if(to.length()>.2)p.position.addScaledVector(to.normalize(),Math.min(to.length(),speed*dt));p.rotation.y=Math.atan2(dir,0);});
+defense.forEach((p,i)=>{p.userData.stun=Math.max(0,p.userData.stun-dt);if(p.userData.stun>0)return;let mark=(coachMode&&ballTeam==='cpu'&&window.CoachClipboard)?(offense[CoachClipboard.matchup(i)]||offense[i]||offense[0]):(offense[i]||offense[0]);if(p===getActive())return;let target;var __dov=(coachMode&&ballTeam==='cpu'&&window.CoachClipboard)?CoachClipboard.defenderTarget(p,i,offense,mark,ballP,dir):null;if(__dov){target=__dov;}else if((i===0||mark===getHandler())||(doubleTeamMode&&ballTeam==='cpu'&&p!==getActive()))target=ballP.clone().add(V(-dir*1.05,0,(i%2===0?-.85:.85)*(settings.helpDefense/50)));else target=mark.position.clone().add(V(-dir*.75,0,0));target.x=THREE.MathUtils.clamp(target.x,-13,13);target.z=THREE.MathUtils.clamp(target.z,-6.4,6.4);let to=target.sub(p.position);let speed=(difficulty==='rookie'?3.0:difficulty==='pro'?4:4.7)*(settings.gameSpeed/50);if(p.userData.injured)speed*=p.userData.injuryFactor;if(to.length()>.18)p.position.addScaledVector(to.normalize(),Math.min(to.length(),speed*dt));p.rotation.y=Math.atan2(ballP.x-p.position.x,ballP.z-p.position.z)});
+if(ballTeam==='cpu'){let h=getHandler();let hoop=basketFor('cpu'),d=h.position.distanceTo(V(hoop.pos.x,0,hoop.pos.z));let to=V(hoop.pos.x+(-dir*4.2),0,Math.sin(possessionSeconds*.8)*2.4).sub(h.position);if(to.length()>.25)h.position.addScaledVector(to.normalize(),Math.min(to.length(),(difficulty==='rookie'?3.1:3.65)*dt));h.rotation.y=Math.atan2(-1,0);if(!shot&&(d<7.8&&possessionSeconds>2.1||possessionSeconds>12)){let nearestDef=playerTeam.map((p,i)=>({p,i,dist:p.position.distanceTo(h.position)})).sort((a,b)=>a.dist-b.dist)[0];let defD=nearestDef.dist;let points=d>7.1?3:2;let shotType=d<2.3?'LAYUP':'JUMPER';let chance=(d<3?.65:d<7?.44:.29)*(defD<2.5?.63:1)*(settings.cpuShotSuccess/50)*(points===3?settings.threePointSuccess/50*eraGameplay.threeRate:settings.midRangeSuccess/50);if(shotType==='LAYUP')chance*=settings.layupSuccess/50;if(difficulty==='rookie')chance+=.1;if(settings.clutchFactor&&!practice&&(gameSeconds%(settings.quarterMinutes*60))<30&&Math.abs(scoreUser-scoreCPU)<=5)chance+=.05;let cpuMade=Math.random()<Math.max(.02,Math.min(.98,chance)),target=hoop.pos.clone();if(cpuMade){target.y=2.36}else{target.y=3.14;target.x+=(Math.random()<.5?-1:1)*(.26+Math.random()*.62);target.z+=(Math.random()<.5?-1:1)*(.22+Math.random()*.55)}shot={start:h.position.clone().add(V(0,1.6,0)),end:target,t:0,duration:1.0,made:cpuMade,points,team:'cpu',handler:ballHandler,kind:shotType,release:1,foul:settings.nbaRules&&defD<1.4&&Math.random()<(settings.shootingFoul/100)*.24,foulerIndex:nearestDef.i};shotCooldown=1;lastCpuShot=possessionSeconds;setState('CPU SHOT',`Contest the look. ${d>7.1?'Three-point attempt':'Two-point attempt'}.`);}}}
+function updateGame(dt){if(!run||paused||gameEnded)return;if(!practice){gameSeconds-=dt;if(gameSeconds<=0){gameSeconds=0;updateUI();endMatch();return}let q=Math.floor((settings.quarterMinutes*60*4-gameSeconds)/(settings.quarterMinutes*60));gameQuarter=Math.min(4,Math.max(1,q+1));shotSeconds-=dt;if(settings.shotClockRule&&shotSeconds<=0&&!shot){showToast('SHOT CLOCK VIOLATION','Possession changes.',700);switchPossession(ballTeam==='user'?'cpu':'user');}}
+shotCooldown=Math.max(0,shotCooldown-dt);stealCooldown=Math.max(0,stealCooldown-dt);possessionSeconds+=dt;screenTimer=Math.max(0,screenTimer-dt);contactCooldown=Math.max(0,contactCooldown-dt);let prevActive=getActive(),vel=V(),animPlayers=[...playerTeam,...cpuTeam],animStarts=animPlayers.map(q=>q.position.clone());
+if(!practice&&!shot){let side=ballTeam,h=getHandler();if(side==='user'){if(h.position.x>0)crossedHalfcourt.user=true;if(settings.backcourtRule&&crossedHalfcourt.user&&h.position.x<-.15){switchPossession('cpu');showToast('BACKCOURT VIOLATION','Possession changes.',900);return}}else{if(h.position.x<0)crossedHalfcourt.cpu=true;if(settings.backcourtRule&&crossedHalfcourt.cpu&&h.position.x>.15){switchPossession('user');showToast('BACKCOURT VIOLATION','Possession changes.',900);return}}if(settings.eightSecondRule&&possessionSeconds>8&&!crossedHalfcourt[side]&&((side==='user'&&h.position.x<0)||(side==='cpu'&&h.position.x>0))){switchPossession(side==='user'?'cpu':'user');showToast('8-SECOND VIOLATION','The offense failed to advance the ball.',900);return}let offense=side==='user'?playerTeam:cpuTeam;for(let i=0;i<offense.length;i++){let inPaint=side==='user'?offense[i].position.x>8.1:offense[i].position.x< -8.1;paintSeconds[side][i]=inPaint?paintSeconds[side][i]+dt:0;if(settings.threeSecondRule&&paintSeconds[side][i]>3.05){switchPossession(side==='user'?'cpu':'user');showToast('3-SECOND VIOLATION','Offensive player remained in the lane.',900);return}}if(settings.fiveSecondBackToBasket&&side==='user'&&(keys.Control||keys.ControlLeft)){postSeconds+=dt;if(postSeconds>5){switchPossession('cpu');showToast('5-SECOND VIOLATION','Back-to-basket time expired.',900);return}}else postSeconds=0}
+
+if(!shot){if(ballTeam==='user'){let p=getActive();if(active===ballHandler){let dir=moveInput();let sprint=keys.Shift||keys.shift;let postUp=!!(keys.Control||keys.ControlLeft);let speed=(sprint?7.6:5.2)*(settings.gameSpeed/50)*(postUp?.52:1)*(build==='playmaker'?1.12:1)*(.86+career.attrs.handle/450)*(.85+career.attrs.stamina/500);if(settings.fatigue){if(sprint)p.userData.stamina=Math.max(5,p.userData.stamina-settings.fatigueRate*.18*dt);else p.userData.stamina=Math.min(100,p.userData.stamina+settings.fatigueRate*.12*dt);if(p.userData.stamina<25)speed*=.78}else p.userData.stamina=100;if(settings.injuries&&settings.injurySeverity>0&&p.userData.stamina<12&&!p.userData.injured&&Math.random()<settings.injurySeverity*.00001){p.userData.injured=true;p.userData.injuryFactor=.7;showToast('PLAYER INJURY',`${rosterFor('user',active).name} has picked up a knock.`,1000)}let old=p.position.clone();p.position.addScaledVector(dir,speed*dt);if(settings.outOfBoundsRule&&(p.position.x< -13.2||p.position.x>13.1||p.position.z< -7||p.position.z>7)){switchPossession('cpu');showToast('OUT OF BOUNDS','Possession changes.',850);return}p.position.x=THREE.MathUtils.clamp(p.position.x,-13.2,13.1);p.position.z=THREE.MathUtils.clamp(p.position.z,-7,7);vel.copy(p.position).sub(old).divideScalar(Math.max(dt,.001));if(vel.length()>.1)p.rotation.y=Math.atan2(vel.x,vel.z);movePhase+=dt*(vel.length()>.2?12:4);personAnimate(p,vel,dt,movePhase,true);let closest=cpuTeam.slice().sort((a,b)=>a.position.distanceTo(p.position)-b.position.distanceTo(p.position))[0];if(closest)tryContactFoul(p,closest);}}
+else{let p=getActive();let toward=getHandler().position.clone().sub(p.position);if(keys.Control||keys.ControlLeft)attemptSteal();let old=p.position.clone();let dir=moveInput();p.position.addScaledVector(dir,5.1*dt);p.position.x=THREE.MathUtils.clamp(p.position.x,-13.2,13.2);p.position.z=THREE.MathUtils.clamp(p.position.z,-7,7);vel.copy(p.position).sub(old).divideScalar(Math.max(dt,.001));if(vel.length()>.08)p.rotation.y=Math.atan2(vel.x,vel.z);movePhase+=dt*(vel.length()>.2?12:4);personAnimate(p,vel,dt,movePhase,false);if(keys.Space&&toward.length()<2.4)p.userData.torso.rotation.x=-.14;}
+if(charging&&ballTeam==='user'&&active===ballHandler){charge=Math.min(1,charge+dt*.85);$('meterWrap').style.display=settings.shotMeter?'block':'none';$('meterFill').style.width=(charge*100)+'%';setState('SHOT METER',`Release around 70% for the cleanest timing · ${Math.round(charge*100)}%`)}else if(!charging){$('meterWrap').style.display='none';$('meterFill').style.width='0%';}
+if(!shot){if(passFlight){passFlight.t+=dt;let q=Math.min(1,passFlight.t/passFlight.duration);ballGroup.position.copy(passFlight.start).lerp(passFlight.end,q);ballGroup.position.y+=Math.sin(q*Math.PI)*(passFlight.height||.65);if(passFlight.style==='bounce')ballGroup.position.y-=Math.sin(q*Math.PI)*.40;ballGroup.rotation.x+=dt*9;if(q>=1)passFlight=null;}else{let h=getHandler();if((ballTeam==='user'&&active===ballHandler)||ballTeam==='cpu'){if(performance.now()>nextDribbleSfx&&h.userData.speed>.2){sfx('bounce');nextDribbleSfx=performance.now()+410}}let bY=.23+Math.abs(Math.sin(performance.now()*.012))*(.38);if(ballTeam==='user'&&active===ballHandler&&charging)bY=1.45+charge*.2;ballGroup.position.set(h.position.x+(h===getActive() ? .32 : .28),bY,h.position.z+.25);ballGroup.rotation.x+=dt*7;ballGroup.rotation.z+=dt*4;}}
+}else{shot.t+=dt;let p=Math.min(1,shot.t/shot.duration);let shooter=(shot.team==='user'?playerTeam:cpuTeam)[shot.handler];if(shooter){shooter.position.y=Math.sin(p*Math.PI)*.48;shooter.userData.limbs[0].rotation.z=.78;shooter.userData.limbs[2].rotation.z=-.78;shooter.userData.limbs[0].rotation.x=-.35;shooter.userData.limbs[2].rotation.x=-.35;}let arc=Math.sin(p*Math.PI)*(shot.kind==='DUNK'?1.1:shot.kind==='LAYUP'?1.7:3.2);ballGroup.position.copy(shot.start).lerp(shot.end,p);ballGroup.position.y+=arc;ballGroup.rotation.x+=dt*14;ballGroup.rotation.z+=dt*10;
+if(p>=1){let resolvedShot={...shot};let made=resolvedShot.made,team=resolvedShot.team,pts=resolvedShot.points;let typ=resolvedShot.kind;let shotPlayer=(team==='user'?playerTeam:cpuTeam)[shot.handler];if(shotPlayer){shotPlayer.position.y=0;shotPlayer.userData.limbs[0].rotation.z=.15;shotPlayer.userData.limbs[2].rotation.z=-.15;shotPlayer.userData.limbs[0].rotation.x=0;shotPlayer.userData.limbs[2].rotation.x=0;}if(made){sfx('score');if(team==='user'){scoreUser+=pts;careerStats.points+=pts;careerStats.made++;if(passForAssist)careerStats.assists++;}else scoreCPU+=pts;passForAssist=false;switchPossession(team==='user'?'cpu':'user',true);showToast(team==='user'?'BUCKET · +'+pts:'CPU SCORES · +'+pts,`${typ} converted. Next possession.`,1050);setState(team==='user'?'BUCKET':'CPU BUCKET',`${pts} points · ${typ}`)}else{sfx('rim');if(team==='user')passForAssist=false;let hoopTarget=basketFor(team).pos;let own=team==='user'?playerTeam:cpuTeam,opp=team==='user'?cpuTeam:playerTeam;let ownNear=Math.min(...own.map(g=>Math.hypot(g.position.x-hoopTarget.x,g.position.z-hoopTarget.z)));let oppNear=Math.min(...opp.map(g=>Math.hypot(g.position.x-hoopTarget.x,g.position.z-hoopTarget.z)));let looseFoul=settings.nbaRules&&Math.random()<(settings.looseBallFoul/100)*.035;let offensiveBoard=(Math.random()<.24 && ownNear<oppNear+1.8);let reboundTeam=looseFoul?team:(offensiveBoard?team:(team==='user'?'cpu':'user'));switchPossession(reboundTeam);if(looseFoul){shotSeconds=24;showToast('LOOSE-BALL FOUL','Possession retained after the rebound whistle.',1000);setState('LOOSE-BALL FOUL','Inbound and reset the offense.')}else if(offensiveBoard){shotSeconds=14;showToast('OFFENSIVE REBOUND','Second-chance possession · 14-second shot clock.',1050);setState('OFFENSIVE REBOUND','Reset and create another look.')}else{showToast('DEFENSIVE REBOUND','Possession changes after the board.',850);setState('DEFENSIVE REBOUND','Get into transition.')}}if(resolvedShot.foul)resolveShootingFoul(resolvedShot,made);try{if(typeof coachOnShotResolved==='function')coachOnShotResolved(resolvedShot,made,team,pts,typ);}catch(e){}updateUI();shot=null;if(!practice&&gameSeconds<=0){endMatch();return}}}
+teamAI(dt);if(coachMode)coachPossessionAI(dt);
+for(let i=0;i<5;i++){let up=playerTeam[i],cp=cpuTeam[i];up.userData.indicator.visible=(i===active);cp.userData.indicator.visible=false;if(up!==getActive()&&!(ballTeam==='user'&&i===ballHandler))personAnimate(up,up.position.clone().sub(animStarts[i]).divideScalar(Math.max(dt,.001)),dt,movePhase+i,false);if(cp!==getHandler()||!shot)personAnimate(cp,cp.position.clone().sub(animStarts[5+i]).divideScalar(Math.max(dt,.001)),dt,movePhase+i+3,cp===getHandler());}
+if(!practice)updateUI();
+}
+
+function coachPossessionAI(dt){
+ if(!coachMode||paused||gameEnded||shot||passFlight)return;
+ const h=getHandler();
+ if(ballTeam==='user'){
+  const hoop=basketFor('user'),target=hoop.pos,d=h.position.distanceTo(V(target.x,0,target.z));
+  const pace=$('coachTempo')?.value||'balanced';const system=$('coachOffense')?.value||'motion';
+  const speed=(pace==='fast'?5.5:pace==='patient'?3.0:4.0)*(settings.gameSpeed/50)*eraGameplay.pace;
+  const zTarget=system==='perimeter'?(Math.random()<.5?-5.2:5.2):system==='isolation'?Math.sin(possessionSeconds*.7)*1.3:Math.sin(possessionSeconds*.6)*2.2;
+  const targetX=target.x-(system==='perimeter'?7.4:system==='isolation'?4.8:4.1);
+  const vec=V(targetX,0,zTarget).sub(h.position);if(vec.length()>.25){let old=h.position.clone();h.position.addScaledVector(vec.normalize(),Math.min(vec.length(),speed*dt));h.position.x=THREE.MathUtils.clamp(h.position.x,-12.5,12.2);h.position.z=THREE.MathUtils.clamp(h.position.z,-6.2,6.2);h.rotation.y=Math.atan2(h.position.x-old.x,h.position.z-old.z);}
+  if(possessionSeconds>coachDecisionAt&&(d<8.5&&possessionSeconds>(pace==='fast'?1.4:pace==='patient'?4.2:2.4)||possessionSeconds>13.2)){
+   const defenders=cpuTeam.map(p=>p.position.distanceTo(h.position)).sort((a,b)=>a-b);const pressure=defenders[0]||5;let points=(system==='perimeter'&&d>5.8)||(d>7.2&&Math.random()<.5*eraGameplay.threeRate)?3:2;if(system==='pick-roll'&&d<5)points=2;if(system==='isolation'&&pressure<2.1&&Math.random()<.55)points=2;
+   const rating=(h.userData.roster?.ft||75);let chance=(points===3?.35:.51)*(settings.userShotSuccess/50)*(points===3?settings.threePointSuccess/50*eraGameplay.threeRate:settings.midRangeSuccess/50)*(rating/80)*(pressure<1.7?.72:pressure<2.8?.86:1);if(system==='motion')chance*=1.08;if(system==='isolation'&&rating>=85)chance*=1.13;if(pace==='patient')chance*=1.06;
+   try{if(coachMode&&window.Momentum)chance*=Momentum.getShootingMult('user');}catch(e){}const made=Math.random()<Math.max(.04,Math.min(.82,chance));let end=target.clone();end.y=made?2.36:3.14;if(!made){end.x+=(Math.random()<.5?-1:1)*(.3+Math.random()*.55);end.z+=(Math.random()<.5?-1:1)*(.2+Math.random()*.5)}
+   shot={start:h.position.clone().add(V(0,1.6,0)),end,t:0,duration:1.02,made,points,team:'user',handler:ballHandler,kind:points===3?'THREE':'JUMPER',release:1,foul:settings.nbaRules&&pressure<1.4&&Math.random()<(settings.shootingFoul/100)*.2,foulerIndex:cpuTeam.map((p,i)=>({i,d:p.position.distanceTo(h.position)})).sort((a,b)=>a.d-b.d)[0]?.i||0};shotCooldown=1;coachDecisionAt=possessionSeconds+2.2;coachPossessions++;
+   coachLastDecision=`${system==='motion'?'Motion set':system==='pick-roll'?'Pick-and-roll':system==='isolation'?'Star isolation':'Perimeter action'} · ${points===3?'3PT look':'2PT look'}`;$('coachReport').innerHTML=`<b>${coachLastDecision}</b><br>${made?'Shot is tracking as a make.':'Shot is up — watch the rebound.'} Pressure: ${pressure.toFixed(1)}m.`;$('ribbonHeadline').textContent=coachLastDecision.toUpperCase();$('ribbonDetail').textContent=`${h.userData.roster?.name||'Ball handler'} · ${points} point attempt · ${pressure<2?'contested':'space created'}`;setState('COACH CALL',coachLastDecision);
+  }
+ }
+ if(coachTimeoutLock>0)coachTimeoutLock=Math.max(0,coachTimeoutLock-dt);
+}
+function coachSetReport(head,detail){$('coachReport').innerHTML=`<b>${head}</b><br>${detail}`;$('ribbonHeadline').textContent=head.toUpperCase();$('ribbonDetail').textContent=detail;showToast(head,detail,950)}
+function coachSubstitute(){if(!coachMode||!run||paused||gameEnded)return;if(coachSubCount<=0){coachSetReport('Rotation settled','All planned rotation changes have been used.');return}const tm=chosenTeam('user'),bench=tm.bench||[];if(!bench.length){coachSetReport('No bench data','This roster has no bench players configured.');return}const idx=coachPlayerSubIndex%playerTeam.length,model=playerTeam[idx],entry=bench[coachBenchIndex%bench.length];coachPlayerSubIndex++;coachBenchIndex++;coachSubCount--;const previous=model.userData.roster?.name||rosterFor('user',idx).name;model.userData.roster={name:entry[0],number:entry[1],pos:entry[2],ft:entry[3]};const draw=(canvas,fn)=>{const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);fn(ctx);};draw(model.userData.numberCanvas,ctx=>{ctx.fillStyle='#f4f4e9';ctx.font='900 90px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(entry[1]),64,65)});model.userData.numberTexture.needsUpdate=true;draw(model.userData.nameCanvas,ctx=>{ctx.fillStyle='#f4f4e9';ctx.font='900 26px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(entry[0].toUpperCase(),128,24)});model.userData.nameTexture.needsUpdate=true;ballHandler=idx;active=idx;playerTeam.forEach((p,i)=>p.userData.hasBall=i===idx);cpuTeam.forEach(p=>p.userData.hasBall=false);$('coachSubs').textContent=`SUBS ${coachSubCount}/5`;$('activePlayerMeta').textContent=`${entry[0]} · ${entry[2]} · #${entry[1]}`;coachSetReport('Substitution completed',`${previous} exits the rotation. ${entry[0]} enters at ${entry[2]}. Their procedural player model now carries the new name and number.`);try{if(typeof coachOnSub==='function')coachOnSub(previous,entry[0]);}catch(e){}}
+function coachCallTimeout(){if(!coachMode||!run||paused||gameEnded)return;if(coachTimeouts<=0){coachSetReport('No timeouts left','The bench is out of stoppages.');return}if(coachTimeoutLock>0){coachSetReport('Timeout unavailable','Wait for the current possession to settle.');return}coachTimeouts--;coachTimeoutLock=18;shot=null;passFlight=null;shotSeconds=24;possessionSeconds=0;coachTimeoutLock=18;$('coachTO').textContent=`TIMEOUTS ${coachTimeouts}`;paused=true;$('pause').classList.remove('hidden');$('pauseText').textContent=`TIMEOUT · ${scoreUser}–${scoreCPU} · ${Math.floor(gameSeconds/60)}:${String(Math.floor(gameSeconds%60)).padStart(2,'0')} remaining. Adjust the game plan, then resume.`;$('resume').textContent='RESUME GAME';coachSetReport('Timeout called','Reset the offense, make a substitution, or change the coverage before resuming.');try{if(typeof coachOnTimeout==='function')coachOnTimeout('user');}catch(e){}}
+function coachFocus(){coachFocusStar=!coachFocusStar;const system=$('coachOffense');if(coachFocusStar)system.value='isolation';else system.value='motion';coachSetReport(coachFocusStar?'Star touches increased':'Motion offense restored',coachFocusStar?'The highest-rated starter gets more isolation possessions.':'The offense returns to movement and shared touches.')}
+function coachDefenseChange(){const d=$('coachDefense')?.value||'man';if(d==='pressure'){settings.helpDefense=Math.min(95,settings.helpDefense+8);difficulty='hall';}else if(d==='paint'){settings.helpDefense=Math.min(95,settings.helpDefense+20);difficulty='pro';}else if(d==='switch'){settings.helpDefense=72;difficulty='hall';}else{settings.helpDefense=65;difficulty='pro';}doubleTeamMode=d==='pressure'||d==='switch';coachSetReport(`Coverage: ${d}`,d==='pressure'?'More ball pressure and aggressive help.':d==='paint'?'Pack the lane and concede more perimeter space.':d==='switch'?'Aggressive switches on screens.':'Standard assignments and balanced help.');}
+function coachBind(){
+ $('coachStart').onclick=()=>{$('teamSelect').classList.remove('hidden')};
+document.querySelectorAll('.ts-card').forEach(card=>{
+card.addEventListener('click',()=>{
+const chosen=card.dataset.team;coachMode=true;
+const finalsTeams=['celtics','warriors','heat'];
+$('homeTeam').value=chosen;
+const opponents=finalsTeams.filter(t=>t!==chosen);
+$('awayTeam').value=opponents[Math.floor(Math.random()*opponents.length)];
+$('gameMode').value='team';
+$('teamMatchup').textContent=`${chosenTeam('user').abbr} vs ${chosenTeam('cpu').abbr} · NBA FINALS`;
+$('arenaLabel').textContent=chosenTeam('user').arena.toUpperCase();
+$('teamSelect').classList.add('hidden');
+window._userFinalsTeam=chosen;
+showPresentation(false);
+});
+});
+ $('coachOffense').onchange=()=>{playCall=$('coachOffense').value;screenTimer=playCall==='pick-roll'?5:0;coachSetReport('Offensive system changed',`Now running ${$('coachOffense').selectedOptions[0].text}.`)};
+ $('coachTempo').onchange=()=>coachSetReport('Tempo adjusted',`Pace set to ${$('coachTempo').selectedOptions[0].text}.`);
+ $('coachDefense').onchange=coachDefenseChange;$('coachSub').onclick=coachSubstitute;$('coachTimeout').onclick=coachCallTimeout;$('coachFocus').onclick=coachFocus;$('coachCam').onclick=()=>{coachCamWide=!coachCamWide;coachSetReport('Camera changed',coachCamWide?'High sideline broadcast view.':'Lower tactical broadcast view.')};
+}
+
+function moveInput(){let x=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),z=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);let d=V(x,0,z);if(d.lengthSq()>1)d.normalize();return d}
+let camLook=V(0,1.3,0),camPrevBall=V(0,0,0),camBallVel=V(),camBoostT=0,camLastTeam=null;
+function updateCamera(dt){try{if(window.BD&&BD.hasOverride()){BD.applyCamera(dt);return;}}catch(e){}if(coachMode){
+let h=getHandler(),bx=h.position.x,bz=h.position.z,sdt=Math.max(dt,.001);
+let vx=(bx-camPrevBall.x)/sdt,vz=(bz-camPrevBall.z)/sdt;camPrevBall.set(bx,0,bz);
+let k=1-Math.exp(-6*sdt);
+camBallVel.x+=(THREE.MathUtils.clamp(vx,-14,14)-camBallVel.x)*k;
+camBallVel.z+=(THREE.MathUtils.clamp(vz,-14,14)-camBallVel.z)*k;
+if(camLastTeam!==ballTeam){camLastTeam=ballTeam;camBoostT=1.7;}
+camBoostT=Math.max(0,camBoostT-dt);
+let dir=ballTeam==='user'?1:-1;
+let spd=Math.hypot(camBallVel.x,camBallVel.z);
+let trans=spd>5.5||camBoostT>0, ft=!!freeThrowMode, dead=paused||gameEnded;
+let px,py,pz,lx,ly,lz;
+if(ft){px=THREE.MathUtils.clamp(bx*.55,-8,8);py=5.4;pz=13.2;lx=dir*12.4;ly=2.4;lz=0;}
+else if(dead){px=0;py=11.5;pz=23;lx=0;ly=1;lz=0;}
+else if(trans){px=THREE.MathUtils.clamp(bx+dir*2.2,-12,12);py=7.6;pz=16.8;lx=THREE.MathUtils.clamp(bx+camBallVel.x*.4,-13.5,13.5);ly=1.2;lz=bz*.3;}
+else{px=THREE.MathUtils.clamp(bx*.88+dir*1.1,-11.5,11.5);py=6.6;pz=14.8;lx=THREE.MathUtils.clamp(bx*.94+camBallVel.x*.22,-13,13);ly=1.35;lz=bz*.28;}
+if(coachCamWide){py+=3.6;pz+=6.5;px*=.55;lx*=.7;}
+py=Math.max(py,4.2);pz=Math.max(pz,11.5);
+camera.position.lerp(V(px,py,pz),1-Math.exp(-3.1*dt));
+camLook.lerp(V(lx,ly,lz),1-Math.exp(-4.6*dt));
+camera.lookAt(camLook);return}let p=getActive(),teamAttack=ballTeam==='user'?1:-1;let target=V(p.position.x-teamAttack*5.8,9.15,p.position.z+11.2);camera.position.lerp(target,1-Math.exp(-2.15*dt));camera.lookAt(p.position.x+teamAttack*2.35,1.05,p.position.z*.42)}
+function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-lastFrame)/1000||0,.033);lastFrame=now;if(run&&!paused&&!gameEnded){let bdReplay=false;try{bdReplay=!!(window.BD&&BD.replayActive());}catch(e){}if(bdReplay){}else if(coachMode&&window.Momentum){try{Momentum.tickSim(dt);}catch(e){updateGame(dt);}}else{updateGame(dt);}try{coachOnQuarterTick();}catch(e){}}if(run&&coachMode){let bdOver=false;try{bdOver=!!(window.BD&&BD.hasOverride());}catch(e){}if(!paused||bdOver){try{BD.update(dt);}catch(e){}}if(!paused){try{if(window.Momentum)Momentum.update(dt);}catch(e){}try{if(window.PlayVisuals)PlayVisuals.update(dt);}catch(e){}try{if(window._cpuCoach)_cpuCoach.update(dt);}catch(e){}}}if(camera&&run)updateCamera(dt);if(renderer&&scene&&camera)renderer.render(scene,camera)}
+function doShotKeyDown(){if(!run||paused||gameEnded||shot)return;if(ballTeam==='user'&&active===ballHandler){charging=true;charge=0;showToast('SET YOUR RELEASE','Hold, then let go near 70%.',0)}else if(ballTeam==='cpu'){let d=getActive().position.distanceTo(getHandler().position);if(d<2.3)setState('CONTEST','Hands up. Disrupt the shot.')}} 
+function keyDown(e){let k=e.key.length===1?e.key.toLowerCase():e.key;if(coachMode){if(k==='Escape')pause();return;}if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(keys[k])return;keys[k]=true;
+ if(e.code==='Space'){if(shot&&shot.team==='cpu'){blockAttempt()}else if(ballTeam==='cpu'){if(shot&&shot.team==='cpu')blockAttempt();else doShotKeyDown()}else{chargeStartedAt=performance.now();doShotKeyDown()}}
+ if(k==='f')passBall(null,keys.Control?'overhead':keys.Shift?'bounce':keys.Alt?'flashy':'chest');
+ if(['1','2','3','4'].includes(k)&&ballTeam==='user')iconPass(Number(k));
+ if(k==='Tab'){e.preventDefault();choosePlayer()}
+ if(k==='q'){if(ballTeam==='user'&&active===ballHandler)doCrossover();else if(ballTeam==='cpu')attemptSteal()}
+ if(k==='c'&&ballTeam==='user')spinMove('behind');if(k==='z'&&ballTeam==='user')spinMove('spin');if(k==='x'){if(ballTeam==='user')spinMove('hop');else if(ballTeam==='cpu'&&shot)blockAttempt();else tryContactFoul(getActive(),getHandler())}
+ if(k==='v')pumpFake();if(k==='b')setScreen();if(k==='t')callPlay();if(k==='g'){doubleTeamMode=!doubleTeamMode;setState(doubleTeamMode?'DOUBLE TEAM ON':'DOUBLE TEAM OFF',doubleTeamMode?'Send help at the ball.':'Return to matchups.')}
+ if(k==='e'){let hoop=basketFor('user'),p=getActive(),d=p.position.distanceTo(V(hoop.pos.x,0,hoop.pos.z));if(ballTeam==='user'&&active===ballHandler&&d<4.8)shoot(true);else if(ballTeam==='cpu')attemptSteal();else showToast('ATTACK THE RIM','Get closer before using the finish move.',650)}
+ if(k==='r')resetCamera();if(k==='Escape')pause();if(k==='Control'||k==='ControlLeft'){if(ballTeam==='cpu')attemptSteal();else if(ballTeam==='user'&&active===ballHandler)setState('POST UP','Back down the defender; use Q or Z for a post move.')}}
+function keyUp(e){if(coachMode)return;let k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false;if(e.code==='Space'&&charging)shoot(false)}
+function bindTouch(){document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});['pointerup','pointercancel','pointerleave'].forEach(n=>b.addEventListener(n,()=>keys[k]=false))});let ts=$('touchShoot');ts.addEventListener('pointerdown',e=>{e.preventDefault();doShotKeyDown()});['pointerup','pointercancel','pointerleave'].forEach(n=>ts.addEventListener(n,()=>{if(charging)shoot(false)}));$('touchPass').onclick=passBall;$('touchMove').onclick=choosePlayer}
+
+function showPresentation(isPractice=false){
+ const home=chosenTeam('user'),away=chosenTeam('cpu');
+ let old=$('presentation');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='presentation';
+ const list=(team)=>team.roster.map((p,i)=>`<div class="rosterPlayer"><b>#${p[1]}</b><span>${p[0]} · ${p[2]}</span></div>`).join('');
+ overlay.innerHTML=`<section class="pregame"><header class="pregameTop"><span><b>COURTSIDE 27</b> / GAME PRESENTATION</span><span>${isPractice?'PRACTICE FACILITY':(coachMode?'FINALS COACH MODE':'NBA REGULAR SEASON')} · ${ERA_PACKAGES[$('historyEra')?.value||'2000s']?.label||'2000s ERA'}</span></header><div class="pregameMatchup"><div class="pregameTeam" style="--team-color:${home.color}"><div class="pregameMark">${home.abbr}</div><h2>${home.name}</h2><p>HOME · ${home.arena.split('·')[0].trim()}</p></div><div class="pregameVS">VS</div><div class="pregameTeam" style="--team-color:${away.color}"><div class="pregameMark">${away.abbr}</div><h2>${away.name}</h2><p>AWAY · ${away.arena.split('·')[0].trim()}</p></div></div><div class="pregameRoster"><section class="rosterBlock"><h3>HOME STARTING FIVE / INTRODUCTIONS</h3><div class="rosterList">${list(home)}</div></section><section class="rosterBlock"><h3>VISITOR STARTING FIVE / INTRODUCTIONS</h3><div class="rosterList">${list(away)}</div></section></div><footer class="pregameBottom"><small>TIP-OFF SEQUENCE · STARTERS ANNOUNCED · CAMERA CUTS · ARENA SOUND</small><div class="actions"><button class="btn secondary" id="pregameBack">BACK TO SETUP</button><button class="btn primary" id="pregameTip">${isPractice?'ENTER SKILL LAB':'START INTRO & TIP-OFF'} →</button></div></footer></section>`;
+ document.body.appendChild(overlay);
+ $('pregameBack').onclick=()=>overlay.remove();
+ $('pregameTip').onclick=()=>{overlay.remove();begin(isPractice);playIntroSequence(home,away,isPractice)};
+}
+function playIntroSequence(home,away,isPractice){
+ const introFiles={BOS:'video/celtics-intro.mp4',GSW:'video/warriors-intro.mp4',MIA:'video/heat-intro.mp4'};
+ const introQueue=[];
+ if(!isPractice){const userAbbr=chosenTeam('user').abbr;const userTeam=userAbbr===home.abbr?home:away;if(introFiles[userAbbr])introQueue.push({team:userTeam,src:introFiles[userAbbr]});}
+ const startLineupSequence=()=>{
+  const flash=document.createElement('div');flash.id='introFlash';flash.innerHTML=`<div class="introLabel">${isPractice?'PLAYER DEVELOPMENT':'PRESENTED LIVE FROM THE ARENA'}</div><strong id="introHeadline">${home.abbr} <span style="color:#f3b544">VS</span> ${away.abbr}</strong><span id="introSub">${home.name} · ${away.name}</span><button id="introSkip" class="btn secondary" style="margin-top:34px;pointer-events:auto">SKIP INTRO ›</button>`;document.body.appendChild(flash);flash.classList.add('active');
+  const sequence=[...home.roster.map(p=>({p,team:home,side:'HOME STARTER'})),...away.roster.map(p=>({p,team:away,side:'VISITING STARTER'}))];let idx=-1,done=false,timer=null;
+  const headline=$('introHeadline'),sub=$('introSub');flash.style.pointerEvents='auto';flash.style.background='radial-gradient(ellipse at 50% 40%,#222d40 0%,#080c13 55%,#030508 100%)';
+  const finish=()=>{if(done)return;done=true;if(timer)clearInterval(timer);flash.remove()};
+  const step=()=>{if(done)return;idx++;if(idx>=sequence.length){headline.innerHTML=`${home.abbr} <span style="color:#f3b544">VS</span> ${away.abbr}`;sub.textContent='STARTING LINEUPS INTRODUCED · TIP-OFF';timer=setTimeout(finish,900);return}const {p,team,side}=sequence[idx];flash.querySelector('.introLabel').textContent=`${side} ${String(idx+1).padStart(2,'0')} / ${team.abbr}`;headline.innerHTML=`<span style="color:${team.color};display:block;font-size:.3em;letter-spacing:.22em;margin-bottom:16px">${team.name}</span>${p[0]} <span style="color:#f3b544">#${p[1]}</span>`;sub.textContent=`${p[2]} · STARTING FIVE · ${team.arena.split('·')[0].trim()}`;flash.style.setProperty('--intro-color',team.color);flash.classList.remove('active');void flash.offsetWidth;flash.classList.add('active')};
+  $('introSkip').onclick=finish;step();timer=setInterval(step,720);
+ };
+ if(!introQueue.length){startLineupSequence();return;}
+ let qi=0;
+ const playNextIntro=()=>{
+  if(qi>=introQueue.length){$('cineTop').classList.remove('show');$('cineBot').classList.remove('show');startLineupSequence();return;}
+  $('cineTop').classList.add('show');$('cineBot').classList.add('show');
+  const item=introQueue[qi++];
+  const stage=document.createElement('div');stage.id='teamVideoIntro';stage.style.cssText='position:fixed;inset:0;z-index:12;background:#030508;display:flex;align-items:center;justify-content:center;overflow:hidden';
+  stage.innerHTML=`<video id="teamIntroVideo" playsinline preload="auto" style="width:100%;height:100%;object-fit:cover;background:#030508" src="${item.src}"></video><div style="position:absolute;left:clamp(20px,5vw,70px);bottom:clamp(24px,6vh,70px);font-size:clamp(12px,1.6vw,20px);font-weight:900;letter-spacing:.24em;text-shadow:0 3px 24px #000">${item.team.name} <span style="color:#f3b544">· FINALS INTRO</span></div><button id="teamIntroSkip" class="btn secondary" style="position:absolute;right:24px;top:24px;background:#05080bcc">SKIP INTRO ›</button>`;
+  document.body.appendChild(stage);const video=$('teamIntroVideo');let completed=false;
+  const finishVideo=()=>{if(completed)return;completed=true;try{video.pause()}catch(e){}stage.remove();$('cineTop').classList.remove('show');$('cineBot').classList.remove('show');playNextIntro()};
+  const fallback=setTimeout(finishVideo,22000);
+  const finishAndClear=()=>{clearTimeout(fallback);finishVideo()};
+  $('teamIntroSkip').onclick=finishAndClear;video.onended=finishAndClear;video.onerror=finishAndClear;
+  video.play().catch(()=>{video.muted=true;video.play().catch(()=>finishAndClear())});
+ };
+ playNextIntro();
+}
+coachBind();
+$('soundToggle').onclick=()=>{soundOn=!soundOn;if(soundOn)initAudio();if(masterGain&&audioCtx)masterGain.gain.setTargetAtTime(soundOn?.48:0,audioCtx.currentTime,.04);$('soundToggle').textContent=soundOn?'SOUND ON':'SOUND OFF'};$('start').onclick=()=>showPresentation(false);$('practice').onclick=()=>showPresentation(true);$('settingsFromMenu').onclick=()=>openSettings('menu');$('settingsFromPause').onclick=()=>openSettings('pause');$('settingsFromHud').onclick=()=>openSettings('hud');$('settingsDone').onclick=closeSettings;$('settingsDefaults').onclick=()=>{settings={...DEFAULT_SETTINGS};saveSettings();renderSettings()};$('settingsBody').addEventListener('input',e=>{let el=e.target,key=el.dataset.setting;if(!key)return;let def=SETTING_GROUPS.flatMap(g=>g.items).find(x=>x[0]===key);let bool=def&&def[5]==='bool';let value=bool?el.checked:Number(el.value);settingsChanged(key,value);let out=document.querySelector(`#settingsBody [data-output=\"${key}\"]`);if(out)out.textContent=bool?(value?'ON':'OFF'):String(value)+(def[5]||'');let previous=el.parentElement.querySelector('output');if(bool&&previous)previous.textContent=value?'ON':'OFF'});$('homeTeam').addEventListener('change',()=>{if($('homeTeam').value===$('awayTeam').value){$('awayTeam').value=Object.keys(TEAM_DATA).find(k=>k!==$('homeTeam').value)||'celtics'}$('teamMatchup').textContent=`${chosenTeam('user').abbr} vs ${chosenTeam('cpu').abbr} · 2009–10 ROSTER ERA`});$('awayTeam').addEventListener('change',()=>{if($('homeTeam').value===$('awayTeam').value){$('homeTeam').value=Object.keys(TEAM_DATA).find(k=>k!==$('awayTeam').value)||'lakers'}$('teamMatchup').textContent=`${chosenTeam('user').abbr} vs ${chosenTeam('cpu').abbr} · 2009–10 ROSTER ERA`});$('arenaSelect').addEventListener('change',()=>{$('arenaLabel').textContent=( $('arenaSelect').value==='auto'?chosenTeam('user').arena:$('arenaSelect').value).toUpperCase()});$('gameMode').addEventListener('change',renderCareer);renderSettings();$('teamMatchup').textContent=`${chosenTeam('user').abbr} vs ${chosenTeam('cpu').abbr} · 2009–10 ROSTER ERA`;$('arenaLabel').textContent=chosenTeam('user').arena.toUpperCase();let careerOpenedFromPause=false;$('careerOpen').onclick=()=>{careerOpenedFromPause=false;$('careerPanel').classList.remove('hidden');renderCareer()};$('careerClose').onclick=()=>{$('careerPanel').classList.add('hidden');if(careerOpenedFromPause){$('pause').classList.remove('hidden');careerOpenedFromPause=false}};$('careerReset').onclick=()=>{if(confirm('Reset career level, XP, record and attributes?')){career=defaultCareer();saveCareer()}};$('careerFromPause').onclick=()=>{careerOpenedFromPause=true;$('pause').classList.add('hidden');$('careerPanel').classList.remove('hidden');renderCareer()};$('resume').onclick=()=>{if(gameEnded)exitMenu();else{pause();$('resume').textContent=paused?'RESUME':'RESUME'}};$('restart').onclick=()=>begin(practice);$('exit').onclick=exitMenu;
+document.addEventListener('keydown',keyDown);document.addEventListener('keyup',keyUp);bindTouch();
+
+/* ================= COACH MODE MODULES (inlined) ================= */
+
+/* ===== INLINED: 00-bridge.js ===== */
+/* ============================================================================
+   COURTSIDE 27 — WINDOW BRIDGE FOR INLINED COACH MODULES
+   The game runs in <script type="module"> scope, but BD and Momentum read
+   live game state via G(name) -> window[name]. This bridge exposes the
+   module-scope bindings they need as lazy window getters (safe against
+   reassignment of `let` variables).
+   ========================================================================== */
+(function(){
+  try{
+    window.THREE = THREE;
+    window.V = V;
+    window.chosenTeam = chosenTeam;
+    window.rosterFor = rosterFor;
+    window.getHandler = getHandler;
+    var defs = [
+      ['scoreUser',function(){return scoreUser;}],
+      ['scoreCPU',function(){return scoreCPU;}],
+      ['gameSeconds',function(){return gameSeconds;}],
+      ['gameQuarter',function(){return gameQuarter;}],
+      ['ballTeam',function(){return ballTeam;}],
+      ['coachMode',function(){return coachMode;}],
+      ['paused',function(){return paused;}],
+      ['gameEnded',function(){return gameEnded;}],
+      ['run',function(){return run;}],
+      ['practice',function(){return practice;}],
+      ['playerTeam',function(){return playerTeam;}],
+      ['cpuTeam',function(){return cpuTeam;}],
+      ['camera',function(){return camera;}],
+      ['scene',function(){return scene;}],
+      ['ballGroup',function(){return ballGroup;}],
+      ['camLook',function(){return camLook;}]
+    ];
+    defs.forEach(function(d){
+      try{ Object.defineProperty(window, d[0], { get:d[1], configurable:true }); }catch(e){}
+    });
+  }catch(e){ if(window.console) console.warn('[coach] bridge failed', e); }
+})();
+
+
+
+/* ===== INLINED: broadcast-director.js ===== */
+/* ============================================================================
+ * BROADCAST DIRECTOR — Courtside 27
+ * ----------------------------------------------------------------------------
+ * Makes the game feel like watching a real NBA Finals TV broadcast (ESPN/TNT).
+ * The user is the coach watching from the sideline; this module is the truck
+ * director calling cameras, replays, and graphics.
+ *
+ * WHAT IT DOES
+ *  1. Camera direction — film-style "shots" (sideline, baseline, overhead,
+ *     iso, replay arc) with motivated cuts on game events.
+ *  2. Instant replay system — position-history recorder + cinematic replay
+ *     sweep with REPLAY bug and lower-third graphics.
+ *  3. Broadcast graphics — lower thirds, Finals bug, stat blasts, break
+ *     transitions, halftime show. All DOM/CSS, TNT-style.
+ *  4. Timeout / halftime / clutch / buzzer-beater presentation sequences.
+ *
+ * INTEGRATION (game side — ~15 lines)
+ * ----------------------------------------------------------------------------
+ *  <script src="specs/broadcast-director.js"><\/script>   <!-- after three.js -->
+ *
+ *  // 1. Boot (after scene/camera exist):
+ *      BD.init({ debug:false });
+ *
+ *  // 2. In the frame loop, BEFORE updateCamera(dt):
+ *      BD.update(dt);
+ *
+ *  // 3. At the top of updateCamera(dt), add:
+ *      if (BD.hasOverride()) { BD.applyCamera(dt); return; }
+ *
+ *  // 4. Event hooks (call where the game already knows these things):
+ *      BD.onShotResult(shot);            // shot = {kind:'DUNK'|'LAYUP'|'JUMPER', made, points, team:'user'|'cpu', handler:index}
+ *      BD.onTimeout(side);               // side = 'user' | 'cpu'
+ *      BD.onQuarter(q);                  // q = 1..4  (call on change)
+ *      BD.onHalftime();                  // call once at the Q2 -> Q3 break
+ *      BD.onGameEnd({winner:'user'|'cpu'});
+ *      BD.onPossessionChange(team);      // optional, sharpens cuts
+ *      BD.onFoul(shooterSide);           // optional
+ *
+ *  // 5. Replay pausing — while BD.replayActive() is true the sim should
+ *     freeze (players/ball are being driven from recorded history):
+ *      if (!BD.replayActive()) { updateGame(dt); }
+ *
+ *  // 6. Optional stat feed for richer lower thirds:
+ *      BD.trackStat('user', 0, 'pts', 2);   // team, rosterIndex, key, delta
+ *
+ * DESIGN NOTES
+ *  - Every game global is read through G(name) with a safe fallback, so the
+ *    module never throws if the game isn't fully booted.
+ *  - Camera cuts use fast blends (whip-pan feel); within-shot motion is slow
+ *    (broadcast cameras drift, they don't jitter).
+ *  - Graphics are DOM elements with injected CSS — zero Three.js cost.
+ * ========================================================================== */
+'use strict';
+
+const BD = (() => {
+
+/* ------------------------------------------------------------------ */
+/* 0. Safe access to game globals                                      */
+/* ------------------------------------------------------------------ */
+const G = (name, fb) => {
+  try {
+    const v = (typeof window !== 'undefined' ? window[name] : undefined);
+    return (v === undefined || v === null) ? fb : v;
+  } catch (e) { return fb; }
+};
+const V3 = (x=0, y=0, z=0) => {
+  try {
+    const VF = G('V', null);
+    if (VF) return VF(x, y, z);
+    const TH = G('THREE', null);
+    if (TH) return new TH.Vector3(x, y, z);
+  } catch (e) {}
+  return { x, y, z, clone(){ return V3(x,y,z); }, lerp(){ return this; },
+           copy(o){ this.x=o.x; this.y=o.y; this.z=o.z; return this; },
+           distanceTo(o){ const dx=this.x-o.x,dy=this.y-o.y,dz=this.z-o.z; return Math.sqrt(dx*dx+dy*dy+dz*dz); } };
+};
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+const config = {
+  debug: false,
+  sound: false,          // set true to enable tiny synth stings
+  replayLength: 6.0,     // seconds of history kept
+  replaySpeed: 0.38,     // slow-mo factor during replay
+  clutchWindow: 120,     // seconds remaining that counts as clutch
+  clutchMargin: 5,       // point margin that counts as clutch
+  autoReplay: true,      // auto-trigger replays on spectacular plays
+  lowerThirdTime: 4.2,   // seconds a lower third stays up
+};
+const log = (...a) => { if (config.debug) console.log('[BD]', ...a); };
+
+/* ------------------------------------------------------------------ */
+/* 1. Broadcast graphics (DOM, TNT/ESPN style)                         */
+/* ------------------------------------------------------------------ */
+const CSS = `
+#bd-layer{position:fixed;inset:0;z-index:40;pointer-events:none;font-family:'Arial Narrow',Arial,Helvetica,sans-serif;overflow:hidden}
+#bd-layer .bd-hidden{display:none!important}
+/* ---- Finals bug (top right) ---- */
+#bd-bug{position:absolute;top:14px;right:16px;display:flex;align-items:stretch;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+#bd-bug .bd-bug-main{background:linear-gradient(180deg,#0d1626,#060b14);border:1px solid #c8a24a;border-right:none;padding:7px 12px;color:#f5f2e8;font-weight:900;font-size:13px;letter-spacing:.14em;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+#bd-bug .bd-bug-sub{background:linear-gradient(180deg,#c8a24a,#8a6d2c);padding:7px 12px 7px 14px;color:#0a0e14;font-weight:900;font-size:13px;letter-spacing:.1em;clip-path:polygon(8px 0,100% 0,100% 100%,0 100%)}
+/* ---- Replay bug ---- */
+#bd-replaybug{position:absolute;top:14px;left:16px;display:flex;align-items:center;gap:8px;background:rgba(4,6,10,.82);border:1px solid #e8b13c;padding:6px 12px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+#bd-replaybug .dot{width:10px;height:10px;border-radius:50%;background:#ff3b30;animation:bd-blink 1s steps(2) infinite}
+#bd-replaybug span{color:#f5f2e8;font-weight:900;font-size:13px;letter-spacing:.22em}
+@keyframes bd-blink{50%{opacity:.25}}
+/* ---- Lower third ---- */
+#bd-lower3rd{position:absolute;left:0;bottom:9%;min-width:min(430px,72vw);transform:translateX(-105%);transition:transform .45s cubic-bezier(.2,.9,.25,1)}
+#bd-lower3rd.show{transform:translateX(0)}
+#bd-lower3rd .bd-lt-top{background:linear-gradient(90deg,#0a1220 78%,transparent);padding:10px 46px 8px 22px;clip-path:polygon(0 0,100% 0,calc(100% - 26px) 100%,0 100%)}
+#bd-lower3rd .bd-lt-name{color:#fff;font-weight:1000;font-size:clamp(19px,2.6vw,30px);letter-spacing:.04em;line-height:1}
+#bd-lower3rd .bd-lt-name small{color:#c8a24a;font-size:.62em;letter-spacing:.12em;margin-left:10px}
+#bd-lower3rd .bd-lt-stat{background:linear-gradient(90deg,#c8a24a,#8a6d2c);padding:6px 46px 6px 22px;color:#0a0e14;font-weight:900;font-size:clamp(12px,1.5vw,16px);letter-spacing:.1em;clip-path:polygon(0 0,calc(100% - 40px) 0,calc(100% - 66px) 100%,0 100%);display:inline-block;margin-top:5px;white-space:nowrap}
+/* ---- Stat blast (center banner) ---- */
+#bd-blast{position:absolute;left:50%;top:16%;transform:translate(-50%,-30px);opacity:0;transition:all .4s ease;background:rgba(5,8,14,.9);border-top:2px solid #c8a24a;border-bottom:2px solid #c8a24a;padding:12px 34px;text-align:center;min-width:min(560px,84vw)}
+#bd-blast.show{transform:translate(-50%,0);opacity:1}
+#bd-blast .bd-blast-kicker{color:#c8a24a;font-weight:900;font-size:11px;letter-spacing:.34em;margin-bottom:6px}
+#bd-blast .bd-blast-main{color:#fff;font-weight:1000;font-size:clamp(20px,3vw,34px);letter-spacing:.05em}
+#bd-blast .bd-blast-sub{color:#9fb0c3;font-size:13px;letter-spacing:.14em;margin-top:5px}
+/* ---- Break transition wipe ---- */
+#bd-wipe{position:absolute;inset:0;background:linear-gradient(100deg,#060b14 60%,#0d1626);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;opacity:0;pointer-events:none;transition:opacity .35s}
+#bd-wipe.show{opacity:1;pointer-events:none}
+#bd-wipe .bd-wipe-k{color:#c8a24a;font-weight:900;letter-spacing:.4em;font-size:12px}
+#bd-wipe .bd-wipe-t{color:#fff;font-weight:1000;font-size:clamp(26px,4.5vw,52px);letter-spacing:.06em}
+#bd-wipe .bd-wipe-s{color:#9fb0c3;letter-spacing:.2em;font-size:12px}
+/* ---- Halftime / big-event card ---- */
+#bd-card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(6,10,18,.72),rgba(3,5,8,.94));opacity:0;pointer-events:none;transition:opacity .5s}
+#bd-card.show{opacity:1}
+#bd-card .bd-card-in{text-align:center;border:1px solid #c8a24a;padding:34px 70px;background:rgba(5,8,14,.85)}
+#bd-card .bd-card-k{color:#c8a24a;font-weight:900;letter-spacing:.44em;font-size:12px;margin-bottom:12px}
+#bd-card .bd-card-t{color:#fff;font-weight:1000;font-size:clamp(34px,6vw,72px);letter-spacing:.05em;line-height:1}
+#bd-card .bd-card-s{color:#9fb0c3;letter-spacing:.18em;font-size:13px;margin-top:12px}
+/* ---- Clutch ticker ---- */
+#bd-clutch{position:absolute;bottom:14px;left:50%;transform:translateX(-50%) translateY(80px);transition:transform .4s;background:linear-gradient(90deg,#7a1010,#b01e1e,#7a1010);border:1px solid #ffb3ab;color:#fff;font-weight:900;letter-spacing:.26em;font-size:12px;padding:8px 26px}
+#bd-clutch.show{transform:translateX(-50%) translateY(0)}
+/* ---- Telestrator tag (coach film room) ---- */
+#bd-teles{position:absolute;top:64px;left:16px;background:rgba(4,8,14,.78);border-left:3px solid #d8ff48;padding:7px 14px;color:#eef3ea;font-weight:900;font-size:12px;letter-spacing:.2em}
+`;
+
+const gfx = {
+  root:null, els:{},
+  init(){
+    if (this.root) return;
+    const st = document.createElement('style');
+    st.textContent = CSS;
+    document.head.appendChild(st);
+    const root = document.createElement('div');
+    root.id = 'bd-layer';
+    root.innerHTML = `
+      <div id="bd-bug" class="bd-hidden"><div class="bd-bug-main">NBA&nbsp;FINALS</div><div class="bd-bug-sub" id="bd-bug-sub">GAME&nbsp;7</div></div>
+      <div id="bd-replaybug" class="bd-hidden"><div class="dot"></div><span>REPLAY</span></div>
+      <div id="bd-lower3rd"><div class="bd-lt-top"><div class="bd-lt-name" id="bd-lt-name"></div></div><div><span class="bd-lt-stat" id="bd-lt-stat"></span></div></div>
+      <div id="bd-blast"><div class="bd-blast-kicker" id="bd-blast-kicker"></div><div class="bd-blast-main" id="bd-blast-main"></div><div class="bd-blast-sub" id="bd-blast-sub"></div></div>
+      <div id="bd-wipe"><div class="bd-wipe-k" id="bd-wipe-k"></div><div class="bd-wipe-t" id="bd-wipe-t"></div><div class="bd-wipe-s" id="bd-wipe-s"></div></div>
+      <div id="bd-card"><div class="bd-card-in"><div class="bd-card-k" id="bd-card-k"></div><div class="bd-card-t" id="bd-card-t"></div><div class="bd-card-s" id="bd-card-s"></div></div></div>
+      <div id="bd-clutch">CLUTCH&nbsp;TIME</div>
+      <div id="bd-teles" class="bd-hidden">COACH&nbsp;CAM&nbsp;·&nbsp;ALL-22</div>`;
+    document.body.appendChild(root);
+    this.root = root;
+    ['bd-bug','bd-replaybug','bd-lower3rd','bd-blast','bd-wipe','bd-card','bd-clutch','bd-teles'].forEach(id=>{
+      this.els[id] = root.querySelector('#'+id);
+    });
+    log('graphics ready');
+  },
+  showBug(sub){ this.els['bd-bug'].classList.remove('bd-hidden'); if(sub) this.els['bd-bug'].querySelector('#bd-bug-sub').innerHTML = sub; },
+  hideBug(){ this.els['bd-bug'].classList.add('bd-hidden'); },
+  replayBug(on){ this.els['bd-replaybug'].classList.toggle('bd-hidden', !on); },
+  telestrator(on){ this.els['bd-teles'].classList.toggle('bd-hidden', !on); },
+  clutch(on){ this.els['bd-clutch'].classList.toggle('show', !!on); },
+  _ltTimer:0,
+  lowerThird(name, num, stat){
+    const el = this.els['bd-lower3rd'];
+    el.querySelector('#bd-lt-name').innerHTML = `${esc(name)} <small>#${num}</small>`;
+    el.querySelector('#bd-lt-stat').textContent = stat;
+    el.classList.add('show');
+    clearTimeout(this._ltTimer);
+    this._ltTimer = setTimeout(()=>el.classList.remove('show'), config.lowerThirdTime*1000);
+  },
+  hideLowerThird(){ this.els['bd-lower3rd'].classList.remove('show'); },
+  _blastTimer:0,
+  blast(kicker, main, sub, ms=3200){
+    const el = this.els['bd-blast'];
+    el.querySelector('#bd-blast-kicker').textContent = kicker;
+    el.querySelector('#bd-blast-main').textContent = main;
+    el.querySelector('#bd-blast-sub').textContent = sub || '';
+    el.classList.add('show');
+    clearTimeout(this._blastTimer);
+    this._blastTimer = setTimeout(()=>el.classList.remove('show'), ms);
+  },
+  wipe(kicker, title, sub, ms=1800){
+    const el = this.els['bd-wipe'];
+    el.querySelector('#bd-wipe-k').textContent = kicker;
+    el.querySelector('#bd-wipe-t').textContent = title;
+    el.querySelector('#bd-wipe-s').textContent = sub || '';
+    el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'), ms);
+  },
+  card(kicker, title, sub, ms=2600){
+    const el = this.els['bd-card'];
+    el.querySelector('#bd-card-k').textContent = kicker;
+    el.querySelector('#bd-card-t').textContent = title;
+    el.querySelector('#bd-card-s').textContent = sub || '';
+    el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'), ms);
+  },
+};
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ------------------------------------------------------------------ */
+/* 2. Stat tracking (feeds lower thirds)                               */
+/* ------------------------------------------------------------------ */
+const stats = {
+  // key: "user:0" -> {pts, reb, ast, stl, blk, fg3}
+  map: new Map(),
+  key(team, idx){ return team + ':' + idx; },
+  track(team, idx, k, delta=1){
+    const key = this.key(team, idx);
+    if (!this.map.has(key)) this.map.set(key, {pts:0,reb:0,ast:0,stl:0,blk:0,fg3:0});
+    const s = this.map.get(key);
+    s[k] = (s[k]||0) + delta;
+  },
+  line(team, idx){
+    const s = this.map.get(this.key(team,idx)) || {pts:0,reb:0,ast:0,stl:0,blk:0};
+    const parts = [`${s.pts} PTS`];
+    if (s.reb) parts.push(`${s.reb} REB`);
+    if (s.ast) parts.push(`${s.ast} AST`);
+    if (s.stl) parts.push(`${s.stl} STL`);
+    if (s.blk) parts.push(`${s.blk} BLK`);
+    return parts.join('  ·  ');
+  },
+  teamTotals(team){
+    let pts=0, fg3=0;
+    for (const [k,s] of this.map) if (k.startsWith(team+':')) { pts+=s.pts; fg3+=s.fg3; }
+    return {pts, fg3};
+  },
+  reset(){ this.map.clear(); },
+};
+
+/* ------------------------------------------------------------------ */
+/* 3. Position recorder (feeds the replay system)                       */
+/* ------------------------------------------------------------------ */
+const recorder = {
+  frames: [],       // [{t, ball:[x,y,z], actors:[{team,idx,x,y,z,ry}]}]
+  acc: 0,
+  interval: 1/30,
+  maxAge: 6.0,
+  record(dt){
+    this.acc += dt;
+    if (this.acc < this.interval) return;
+    this.acc = 0;
+    const now = performance.now()/1000;
+    const snap = { t: now, ball: null, actors: [] };
+    try {
+      const bg = G('ballGroup', null);
+      if (bg && bg.position) snap.ball = [bg.position.x, bg.position.y, bg.position.z];
+      for (const team of ['user','cpu']) {
+        const arr = team==='user' ? G('playerTeam',[]) : G('cpuTeam',[]);
+        for (let i=0;i<arr.length;i++){
+          const p = arr[i]; if(!p||!p.position) continue;
+          snap.actors.push({team, idx:i, x:p.position.x, y:p.position.y, z:p.position.z, ry:p.rotation?p.rotation.y:0});
+        }
+      }
+    } catch(e){}
+    this.frames.push(snap);
+    const cutoff = now - this.maxAge;
+    while (this.frames.length && this.frames[0].t < cutoff) this.frames.shift();
+  },
+  /** snapshot closest to (now - secondsAgo) */
+  at(secondsAgo){
+    const target = performance.now()/1000 - secondsAgo;
+    let best = this.frames[0] || null;
+    for (const f of this.frames){
+      if (f.t <= target) best = f; else break;
+    }
+    return best;
+  },
+  clear(){ this.frames.length = 0; },
+};
+
+/* ------------------------------------------------------------------ */
+/* 4. Camera direction — film-style shots                               */
+/* ------------------------------------------------------------------ */
+const HOOP_X = 12.72; // rim x from game code (V(side*12.72,3.06,0))
+
+function hoopSide(team){ return team === 'user' ? 1 : -1; } // user attacks +x
+function getHandlerPos(){
+  try {
+    const h = G('getHandler', null);
+    if (h) { const p = h().position; return V3(p.x, p.y, p.z); }
+  } catch(e){}
+  return V3(0,1,0);
+}
+function getActorPos(team, idx){
+  try {
+    const arr = team==='user' ? G('playerTeam',[]) : G('cpuTeam',[]);
+    const p = arr[idx]; if (p && p.position) return V3(p.position.x, p.position.y, p.position.z);
+  } catch(e){}
+  return V3(0,1,0);
+}
+function teamInfo(team){
+  try {
+    const ct = G('chosenTeam', null);
+    if (ct) { const t = ct(team); return { name:t.name||team, abbr:t.abbr||'', color:t.color||'#d8ff48' }; }
+  } catch(e){}
+  return { name: team, abbr:'', color:'#d8ff48' };
+}
+function rosterName(team, idx){
+  try {
+    const rf = G('rosterFor', null);
+    if (rf) { const r = rf(team, idx); return { name:r.name||('Player '+(idx+1)), number:r.number||0, pos:r.pos||'' }; }
+  } catch(e){}
+  return { name:'Player '+(idx+1), number:0, pos:'' };
+}
+
+/* Shot definitions: each returns {pos, look, blend} — blend = lerp speed */
+const Shots = {
+  /** Low baseline camera behind the hoop — for dunks, finishes, replays */
+  baselineLow(focus, attacking){
+    const hx = HOOP_X * (attacking || 1);
+    return {
+      pos: V3(hx + 3.4*(attacking||1), 2.0, 7.5),
+      look: V3(hx - 2.0*(attacking||1), 2.6, 0),
+      blend: 5.2, name:'BASELINE_LOW',
+    };
+  },
+  /** Opposite baseline, slightly elevated — alternate replay angle */
+  baselineHigh(focus, attacking){
+    const hx = HOOP_X * (attacking || 1);
+    return {
+      pos: V3(hx + 5.5*(attacking||1), 5.2, -8.5),
+      look: V3(hx - 3.0*(attacking||1), 2.2, 0),
+      blend: 4.6, name:'BASELINE_HIGH',
+    };
+  },
+  /** High tactical overhead — timeouts, halftime, coach film room */
+  overhead(){
+    return { pos: V3(0, 26, 6.5), look: V3(0, 0, -0.5), blend: 2.2, name:'OVERHEAD' };
+  },
+  /** Sideline iso on a single player — clutch moments, star intro */
+  isoStar(team, idx){
+    const p = getActorPos(team, idx);
+    const side = p.z >= 0 ? 1 : -1;
+    return {
+      pos: V3(p.x - 4.2, 3.4, p.z + side*7.8),
+      look: V3(p.x, 1.7, p.z),
+      blend: 3.4, name:'ISO_STAR',
+    };
+  },
+  /** Coach huddle — sideline, low, toward bench (behind user basket) */
+  huddle(){
+    return { pos: V3(-16.5, 3.2, 10.5), look: V3(-9.5, 1.4, 3.5), blend: 2.6, name:'HUDDLE' };
+  },
+  /** Free-throw side angle */
+  freeThrow(side){
+    const hx = HOOP_X * side;
+    return {
+      pos: V3(hx - side*7.0, 3.6, 9.0),
+      look: V3(hx - side*1.5, 2.2, 0),
+      blend: 3.8, name:'FT_SIDE',
+    };
+  },
+  /** Victory wide — pulls back to show the whole arena */
+  celebration(){
+    return { pos: V3(0, 13.5, 26), look: V3(0, 1.5, 0), blend: 1.8, name:'CELEBRATION' };
+  },
+  /** Replay arc — computed per-frame during replay (see director) */
+  replayArc(center, radius, angle){
+    return {
+      pos: V3(center.x + Math.cos(angle)*radius, 4.6, center.z + Math.sin(angle)*radius),
+      look: V3(center.x, 2.2, center.z),
+      blend: 99, name:'REPLAY_ARC', // blend unused; position set directly
+    };
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 5. Director state machine                                            */
+/* ------------------------------------------------------------------ */
+const director = {
+  active: false,          // true when director owns the camera
+  shot: null,            // current shot {pos, look, blend, name}
+  shotT: 0,              // time in current shot
+  queue: [],             // upcoming beats: [{at, fn}]
+  holdUntil: 0,
+  mode: 'live',          // live | replay | timeout | halftime | break | buzzer
+  replay: null,          // active replay state
+  timeout: null,
+  halftime: null,
+  buzzer: null,
+
+  clock: 0, // director-local time (advances with update(dt), pause-safe)
+  now(){ return this.clock; },
+
+  /** Take over the camera with a shot object */
+  cut(shot, mode){
+    this.shot = shot;
+    this.shotT = 0;
+    this.active = true;
+    if (mode) this.mode = mode;
+    log('CUT ->', shot.name, '| mode:', this.mode);
+  },
+  /** Release back to the game's own camera */
+  release(){
+    this.active = false;
+    this.shot = null;
+    this.mode = 'live';
+    this.queue.length = 0;
+    log('release -> game camera');
+  },
+  /** Schedule a beat relative to now */
+  after(sec, fn){ this.queue.push({ at: this.now()+sec, fn }); },
+
+  update(dt){
+    const sdt = Math.max(dt, 0);
+    this.clock += sdt;
+    this.shotT += sdt;
+    // run scheduled beats
+    const n = this.now();
+    for (let i=this.queue.length-1;i>=0;i--){
+      if (this.queue[i].at <= n){ const b=this.queue.splice(i,1)[0]; try{ b.fn(); }catch(e){ log('beat err', e.message); } }
+    }
+    if (this.mode === 'replay' && this.replay) this.updateReplay(dt);
+  },
+
+  hasOverride(){ return this.active && !!this.shot; },
+
+  applyCamera(dt){
+    if (!this.hasOverride()) return;
+    const cam = G('camera', null);
+    if (!cam) return;
+    const s = this.shot;
+    if (s.name === 'REPLAY_ARC') {
+      // hard-set during replay sweep (positions computed per frame)
+      cam.position.copy(s.pos);
+      const cl = G('camLook', null);
+      if (cl) { cl.copy(s.look); cam.lookAt(cl); } else cam.lookAt(s.look);
+      return;
+    }
+    const kp = 1 - Math.exp(-(s.blend||3.2)*Math.max(dt,.001));
+    cam.position.lerp(s.pos, kp);
+    try {
+      const cl = G('camLook', null);
+      if (cl){ cl.lerp(s.look, 1-Math.exp(-4.6*Math.max(dt,.001))); cam.lookAt(cl); }
+      else cam.lookAt(s.look);
+    } catch(e){ cam.lookAt(s.look); }
+  },
+
+  /* ---------------- Replay engine ---------------- */
+  startReplay(play){
+    // play: {label, team, idx, points, kind, loc:V3, dur}
+    if (this.mode === 'replay') return;
+    if (!recorder.frames.length || recorder.frames[recorder.frames.length-1].actors.length === 0){
+      log('replay: no history, dramatic hold instead');
+      this.dramaticHold(play);
+      return;
+    }
+    // stash live transforms
+    const live = [];
+    try {
+      const bg = G('ballGroup', null);
+      if (bg) live.push({o:bg.position, v:[bg.position.x,bg.position.y,bg.position.z]});
+      for (const team of ['user','cpu']){
+        const arr = team==='user'?G('playerTeam',[]):G('cpuTeam',[]);
+        arr.forEach((p)=>{ if(p&&p.position) live.push({o:p.position, v:[p.position.x,p.position.y,p.position.z], r:p.rotation, ry:p.rotation?p.rotation.y:0}); });
+      }
+    } catch(e){}
+    const totalFrames = recorder.frames.length - 1;
+    // slow-mo: show the most recent ACTION_SPAN seconds stretched over dur
+    const ACTION_SPAN = 2.6;
+    const spanFrames = clamp(Math.floor(ACTION_SPAN / recorder.interval), 8, totalFrames);
+    this.replay = {
+      play, live,
+      t: 0,
+      dur: play.dur || 4.2,
+      startFrame: Math.max(0, totalFrames - spanFrames),
+      endFrame: totalFrames,
+      center: play.loc ? play.loc.clone() : V3(0,2,0),
+      angle0: Math.atan2(8, 6),
+      radius: 10.5,
+    };
+    this.mode = 'replay';
+    gfx.replayBug(true);
+    const rn = rosterName(play.team, play.idx);
+    gfx.lowerThird(rn.name, rn.number, `${play.label}  ·  ${stats.line(play.team, play.idx)}`);
+    sting('replay');
+    log('REPLAY start:', play.label, 'frames', this.replay.startFrame, '->', this.replay.endFrame);
+  },
+
+  updateReplay(dt){
+    const r = this.replay;
+    if (!r) return;
+    r.t += dt;
+    const span = r.endFrame - r.startFrame;
+    const fi = clamp(Math.floor(r.startFrame + (r.t / r.dur) * span), 0, recorder.frames.length - 1);
+    const snap = recorder.frames[fi];
+    if (snap){
+      try {
+        const bg = G('ballGroup', null);
+        if (bg && snap.ball) bg.position.set(snap.ball[0], snap.ball[1], snap.ball[2]);
+        const byTeam = { user: G('playerTeam',[]), cpu: G('cpuTeam',[]) };
+        for (const a of snap.actors){
+          const p = byTeam[a.team] && byTeam[a.team][a.idx];
+          if (p && p.position){ p.position.set(a.x, a.y, a.z); if (p.rotation) p.rotation.y = a.ry; }
+        }
+      } catch(e){}
+    }
+    // cinematic arc around the play
+    const ang = r.angle0 + (r.t / r.dur) * Math.PI * 0.9;
+    this.shot = Shots.replayArc(r.center, r.radius, ang);
+    this.active = true;
+    if (r.t >= r.dur) this.endReplay();
+  },
+
+  endReplay(){
+    const r = this.replay;
+    if (r){
+      try {
+        for (const s of r.live){
+          s.o.set(s.v[0], s.v[1], s.v[2]);
+          if (s.r) s.r.y = s.ry;
+        }
+      } catch(e){}
+    }
+    this.replay = null;
+    gfx.replayBug(false);
+    gfx.hideLowerThird();
+    // hand back to live — cut to a fresh sideline angle for energy
+    this.mode = 'live';
+    this.release();
+    log('REPLAY end -> live');
+  },
+
+  /** Fallback when no history: dramatic slow push on the moment */
+  dramaticHold(play){
+    const p = getActorPos(play.team, play.idx);
+    this.cut(Shots.isoStar(play.team, play.idx), 'live');
+    gfx.replayBug(true);
+    const rn = rosterName(play.team, play.idx);
+    gfx.lowerThird(rn.name, rn.number, `${play.label}  ·  ${stats.line(play.team, play.idx)}`);
+    this.after(3.4, ()=>{ gfx.replayBug(false); this.release(); });
+  },
+
+  /* ---------------- Timeout sequence ---------------- */
+  startTimeout(side){
+    if (this.mode !== 'live') return;
+    const ti = teamInfo(side);
+    this.mode = 'timeout';
+    this.timeout = { side, t:0 };
+    // 1. cut to huddle, telestrator tag on
+    this.cut(Shots.huddle(), 'timeout');
+    gfx.telestrator(true);
+    gfx.lowerThird(ti.name + ' TIMEOUT', ti.abbr || 'TO', 'COACH DRAWING UP THE NEXT POSSESSION');
+    sting('timeout');
+    // 2. after 3s: overhead all-22 + stat blast
+    this.after(3.0, ()=>{
+      this.cut(Shots.overhead(), 'timeout');
+      const tot = stats.teamTotals(side);
+      const opp = side==='user'?'cpu':'user';
+      const su = G('scoreUser',0), sc = G('scoreCPU',0);
+      gfx.blast('TIMEOUT · ' + ti.name,
+        `${ti.abbr} ${side==='user'?su:sc} — ${opp==='user'?su:sc} ${teamInfo(opp).abbr}`,
+        `TEAM PTS ${tot.pts} · THREES ${tot.fg3}`);
+    });
+    // 3. after 7s: back to live (game resumes from its own pause)
+    this.after(7.0, ()=>{ this.endTimeout(); });
+    log('TIMEOUT sequence:', side);
+  },
+  endTimeout(){
+    gfx.telestrator(false);
+    gfx.hideLowerThird();
+    this.timeout = null;
+    this.mode = 'live';
+    this.release();
+  },
+
+  /* ---------------- Halftime show ---------------- */
+  startHalftime(){
+    if (this.mode !== 'live') return;
+    this.mode = 'halftime';
+    const su = G('scoreUser',0), sc = G('scoreCPU',0);
+    const hu = teamInfo('user'), ha = teamInfo('cpu');
+    this.cut(Shots.overhead(), 'halftime');
+    gfx.card('NBA FINALS', 'HALFTIME', `${hu.abbr} ${su}  ·  ${sc} ${ha.abbr}`, 3400);
+    sting('halftime');
+    this.after(3.6, ()=>{
+      const tu = stats.teamTotals('user'), tc = stats.teamTotals('cpu');
+      gfx.blast('FIRST HALF RECAP', `${hu.abbr} ${su} — ${sc} ${ha.abbr}`,
+        `${hu.abbr}: ${tu.pts} PTS (${tu.fg3} THREES)   ·   ${ha.abbr}: ${tc.pts} PTS (${tc.fg3} THREES)`, 4200);
+    });
+    this.after(8.2, ()=>{
+      // leading scorer lower third
+      let best=null, bestKey='';
+      for (const [k,s] of stats.map){ if(!best||s.pts>best.pts){best=s;bestKey=k;} }
+      if (best){
+        const [tm,ix] = bestKey.split(':');
+        const rn = rosterName(tm, +ix);
+        gfx.lowerThird(rn.name+' · FIRST HALF', rn.number, stats.line(tm,+ix));
+      }
+      this.cut(Shots.celebration(), 'halftime');
+    });
+    this.after(12.5, ()=>{
+      gfx.wipe('NBA FINALS', 'SECOND HALF', 'BACK TO LIVE ACTION', 2000);
+      this.mode = 'live';
+      this.release();
+    });
+    log('HALFTIME show started');
+  },
+
+  /* ---------------- Buzzer beater / game winner ---------------- */
+  buzzerBeater(play){
+    // play: {team, idx, points, loc}
+    this.mode = 'buzzer';
+    const rn = rosterName(play.team, play.idx);
+    const ti = teamInfo(play.team);
+    // freeze on the shooter, tight iso
+    this.cut(Shots.isoStar(play.team, play.idx), 'buzzer');
+    gfx.card('NBA FINALS', 'BUZZER BEATER', `${rn.name} · ${ti.name}`, 3000);
+    sting('buzzer');
+    this.after(3.2, ()=>{
+      // replay it from the baseline
+      this.startReplay({ label:'BUZZER BEATER', team:play.team, idx:play.idx,
+        points:play.points, kind:'JUMPER', loc:play.loc, dur:5.0 });
+      // chain: after replay, celebration wide, then back to live
+      // (onGameEnd will take over if the game is actually over)
+      const prevEnd = this.endReplay.bind(this);
+      this.endReplay = ()=>{
+        prevEnd();
+        this.endReplay = director.endReplay; // restore
+        if (this.mode !== 'buzzer') return;
+        this.cut(Shots.celebration(), 'buzzer');
+        this.after(4.5, ()=>{
+          if (this.mode === 'buzzer'){ this.mode = 'live'; this.release(); }
+        });
+      };
+    });
+    log('BUZZER BEATER sequence');
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* 6. Tiny synth stings (optional, off by default)                      */
+/* ------------------------------------------------------------------ */
+let AC = null;
+function sting(kind){
+  if (!config.sound) return;
+  try {
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const t0 = AC.currentTime;
+    const seqs = {
+      replay:   [[392,0,.16],[523,.14,.16],[659,.28,.3]],
+      timeout:  [[330,0,.2],[262,.18,.35]],
+      halftime: [[523,0,.18],[392,.16,.18],[330,.32,.4]],
+      buzzer:   [[880,0,.5],[880,.55,.9]],
+      clutch:   [[440,0,.12],[440,.14,.12]],
+      break:    [[262,0,.15],[392,.13,.25]],
+    };
+    (seqs[kind]||seqs.break).forEach(([f,dt,dur])=>{
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type='triangle'; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001, t0+dt);
+      g.gain.exponentialRampToValueAtTime(0.22, t0+dt+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dt+dur);
+      o.connect(g).connect(AC.destination);
+      o.start(t0+dt); o.stop(t0+dt+dur+0.05);
+    });
+  } catch(e){}
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. Public API — event hooks the game calls                           */
+/* ------------------------------------------------------------------ */
+function isClutch(){
+  try {
+    const gs = G('gameSeconds', 9999);
+    const q = G('gameQuarter', 1);
+    if (q < 4) return false;
+    if (gs > config.clutchWindow) return false;
+    return Math.abs(G('scoreUser',0) - G('scoreCPU',0)) <= config.clutchMargin;
+  } catch(e){ return false; }
+}
+function maybeClutchTicker(){
+  const c = isClutch();
+  gfx.clutch(c);
+  return c;
+}
+
+const api = {
+  /* lifecycle */
+  init(opts){
+    Object.assign(config, opts||{});
+    gfx.init();
+    recorder.maxAge = config.replayLength;
+    log('init', config);
+    return api;
+  },
+  config,
+
+  /* per-frame — call BEFORE updateCamera(dt) */
+  update(dt){
+    try {
+      recorder.record(dt);
+      director.update(dt);
+      maybeClutchTicker();
+      // live-game camera punctuation
+      if (director.mode === 'live' && !director.active) this._liveBeats(dt);
+    } catch(e){ log('update err', e.message); }
+  },
+  _liveT: 0,
+  _liveBeats(dt){
+    // subtle: after made baskets the game resets; keep default cam.
+    // Reserved for future live punctuation (e.g., and-one iso).
+    this._liveT += dt;
+  },
+
+  /* camera override for updateCamera() */
+  hasOverride(){ return director.hasOverride(); },
+  applyCamera(dt){ director.applyCamera(dt); },
+  replayActive(){ return director.mode === 'replay' && !!director.replay; },
+
+  /* ---- events ---- */
+  onShotResult(shot){
+    // shot: {kind, made, points, team, handler}
+    if (!shot) return;
+    log('shot:', shot.kind, shot.made?'MADE':'MISS', shot.points, shot.team);
+    if (!shot.made){
+      // missed dunk = still cut-worthy if it was posterized attempt? keep live.
+      return;
+    }
+    stats.track(shot.team, shot.handler, 'pts', shot.points);
+    if (shot.points === 3) stats.track(shot.team, shot.handler, 'fg3', 1);
+
+    const gs = G('gameSeconds', 9999);
+    const clutch = isClutch();
+
+    // buzzer beater?
+    if (gs <= 1.6 && !G('practice', false)){
+      const loc = getActorPos(shot.team, shot.handler);
+      director.buzzerBeater({ team:shot.team, idx:shot.handler, points:shot.points, loc });
+      return;
+    }
+
+    // spectacular? -> replay
+    const spectacular =
+      shot.kind === 'DUNK' ||
+      (shot.points === 3 && clutch) ||
+      (shot.kind === 'LAYUP' && clutch && Math.random() < 0.6);
+
+    if (spectacular && config.autoReplay && director.mode === 'live'){
+      const loc = getActorPos(shot.team, shot.handler);
+      const rn = rosterName(shot.team, shot.handler);
+      const label = shot.kind==='DUNK' ? 'POSTER DUNK' : (shot.points===3 ? 'CLUTCH THREE' : 'AND-ONE FINISH');
+      // let the make breathe for a beat, then replay
+      director.after(1.1, ()=>{
+        if (director.mode !== 'live') return;
+        gfx.lowerThird(rn.name, rn.number, `${label} · ${stats.line(shot.team, shot.handler)}`);
+        director.startReplay({ label, team:shot.team, idx:shot.handler,
+          points:shot.points, kind:shot.kind, loc, dur: 4.0 });
+      });
+      if (clutch) sting('clutch');
+      return;
+    }
+
+    // ordinary make in clutch time: quick iso + lower third, no replay
+    if (clutch && director.mode === 'live'){
+      const rn = rosterName(shot.team, shot.handler);
+      gfx.lowerThird(rn.name, rn.number, stats.line(shot.team, shot.handler));
+      director.cut(Shots.isoStar(shot.team, shot.handler), 'live');
+      director.after(2.6, ()=>director.release());
+    }
+  },
+
+  onTimeout(side){
+    director.startTimeout(side);
+  },
+
+  onQuarter(q){
+    log('quarter:', q);
+    gfx.showBug('GAME&nbsp;7');
+    if (q === 3) this.onHalftime();
+    if (q >= 4) gfx.blast('NBA FINALS', 'FOURTH QUARTER', 'WINNING TIME', 2600);
+  },
+
+  onHalftime(){
+    director.startHalftime();
+  },
+
+  onGameEnd(result){
+    // result: {winner:'user'|'cpu'}
+    const w = result && result.winner === 'cpu' ? 'cpu' : 'user';
+    const ti = teamInfo(w);
+    const su = G('scoreUser',0), sc = G('scoreCPU',0);
+    director.mode = 'live';
+    director.cut(Shots.celebration(), 'live');
+    gfx.clutch(false);
+    gfx.card('NBA FINALS', 'FINAL', `${teamInfo('user').abbr} ${su}  ·  ${sc} ${teamInfo('cpu').abbr}`, 4200);
+    sting('buzzer');
+    director.after(4.4, ()=>{
+      gfx.blast('CHAMPIONS', ti.name, 'NBA FINALS · COURTSIDE 27', 6000);
+    });
+    log('game end, winner:', w);
+  },
+
+  onPossessionChange(team){
+    // whip-pan energy on turnovers: quick baseline cut if it was a steal
+    if (director.mode !== 'live' || director.active) return;
+    // light touch: brief tighter follow handled by game cam; we just note it
+    log('possession ->', team);
+  },
+
+  onFoul(side){
+    if (director.mode !== 'live') return;
+    // cut to FT angle; game sets freeThrowMode which its own cam handles —
+    // we add the broadcast layer:
+    const ti = teamInfo(side);
+    gfx.blast('FOUL', ti.name, 'SHOOTING FOUL · AT THE LINE', 2200);
+  },
+
+  onBreakStart(label){
+    // commercial-break style transition (e.g., long pause, quarter breaks)
+    director.mode = 'break';
+    gfx.wipe('NBA FINALS', label || 'TIMEOUT', 'WE\u2019LL BE RIGHT BACK', 2200);
+    sting('break');
+    director.after(2.4, ()=>{ director.mode='live'; });
+  },
+  onBreakEnd(){
+    gfx.wipe('NBA FINALS', 'BACK TO THE ACTION', '', 1400);
+    director.mode = 'live';
+    director.release();
+  },
+
+  /* manual camera calls (coach can trigger) */
+  cutTo(name, a, b){
+    const s = Shots[name];
+    if (!s) return;
+    director.cut(s(a, b), 'live');
+    director.after(4.0, ()=>director.release());
+  },
+  releaseCamera(){ director.release(); },
+
+  /* stats */
+  trackStat(team, idx, k, delta){ stats.track(team, idx, k, delta||1); },
+  resetStats(){ stats.reset(); },
+
+  /* jumbotron hook — game wires its canvas texture here */
+  _jumboFn: null,
+  onJumbotron(fn){ this._jumboFn = fn; },
+  jumbotron(text){ try{ if(this._jumboFn) this._jumboFn(text); }catch(e){} },
+
+  /* expose for debugging */
+  _director: director,
+  _shots: Shots,
+  _gfx: gfx,
+};
+
+return api;
+})();
+
+/* UMD-ish export for non-browser harnesses */
+try { if (typeof module !== 'undefined') module.exports = BD; } catch(e){}
+try { if (typeof window !== 'undefined') window.BD = BD; } catch(e){}
+
+
+
+/* ===== INLINED: commentary-engine.js ===== */
+/* ============================================================
+   COURTSIDE 27 — Broadcast Commentary Engine
+   Two-man booth: "MIKE" (play-by-play, excitable, Breen-style)
+                  "JEFF" (color analyst, dry, Van Gundy-style)
+   Self-contained. Exposes window.Commentary with trigger functions.
+   Wire each trigger to the matching game event in index.html.
+   ============================================================ */
+(function () {
+'use strict';
+
+/* ---------------- Booth setup ---------------- */
+const BOOTH = {
+  pbp:   { name: 'MIKE',  full: 'Mike Breen',      cls: 'cm-pbp'   },
+  color: { name: 'JEFF',  full: 'Jeff Van Gundy',  cls: 'cm-color'  }
+};
+
+/* ---------------- DOM: commentary ticker ---------------- */
+let tickerEl = null, lineEl = null, speakerEl = null, textEl = null;
+
+const TICKER_CSS = `
+#commentaryTicker{position:fixed;left:50%;bottom:calc(7vh + 14px);transform:translateX(-50%);z-index:14;
+max-width:min(860px,92vw);pointer-events:none;opacity:0;transition:opacity .35s}
+#commentaryTicker.on{opacity:1}
+.cm-line{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(180deg,rgba(5,8,12,.92),rgba(5,8,12,.78));
+border-left:4px solid #d8ff48;padding:12px 18px 12px 14px;border-radius:3px;box-shadow:0 12px 40px rgba(0,0,0,.55)}
+.cm-line.big{border-left-color:#f3b544;background:linear-gradient(180deg,rgba(20,12,4,.94),rgba(10,6,2,.82))}
+.cm-speaker{font-size:11px;font-weight:1000;letter-spacing:.22em;padding-top:3px;white-space:nowrap}
+.cm-pbp{color:#d8ff48}.cm-color{color:#7ab8ff}
+.cm-text{font-size:clamp(14px,1.7vw,19px);color:#f2f4ef;line-height:1.45;font-weight:600;text-shadow:0 2px 8px #000}
+.cm-text .bang{color:#f3b544;font-weight:1000}
+#commentaryTicker .cm-fade{animation:cmIn .3s ease-out}
+@keyframes cmIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+`;
+
+function ensureTicker() {
+  if (tickerEl) return;
+  const st = document.createElement('style');
+  st.textContent = TICKER_CSS;
+  document.head.appendChild(st);
+  tickerEl = document.createElement('div');
+  tickerEl.id = 'commentaryTicker';
+  lineEl = document.createElement('div');
+  lineEl.className = 'cm-line';
+  speakerEl = document.createElement('span');
+  speakerEl.className = 'cm-speaker';
+  const textSpan = document.createElement('span');
+  textSpan.className = 'cm-text';
+  textSpan.id = 'cmText';
+  lineEl.appendChild(speakerEl);
+  lineEl.appendChild(textSpan);
+  tickerEl.appendChild(lineEl);
+  document.body.appendChild(tickerEl);
+  textEl = textSpan;
+}
+
+/* ---------------- Queue (never overlaps) ---------------- */
+const queue = [];          // pending lines
+let speaking = false;      // a line is on screen
+let lastLineKey = '';      // anti-repeat
+const recentKeys = [];     // short memory to avoid repeats
+
+function keyOf(speaker, text) { return speaker + '|' + text; }
+
+function remember(k) {
+  recentKeys.push(k);
+  if (recentKeys.length > 14) recentKeys.shift();
+}
+
+/* Weighted pick with anti-repeat */
+function pick(arr) {
+  const fresh = arr.filter(t => !recentKeys.includes(t));
+  const pool = fresh.length ? fresh : arr;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function fmt(s, vars) {
+  return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ''));
+}
+
+/* Say a line. opts: {speaker:'pbp'|'color', big:bool, priority:bool} */
+function say(text, speaker, opts) {
+  opts = opts || {};
+  const line = { text, speaker: speaker || 'pbp', big: !!opts.big };
+  if (opts.priority) {
+    // Big moments cut to the front of the line (but never mid-sentence)
+    queue.unshift(line);
+  } else {
+    queue.push(line);
+  }
+  pump();
+}
+
+function lineDurationMs(text) {
+  // ~ speaking pace, clamped
+  return Math.min(6500, Math.max(2200, 900 + text.length * 42));
+}
+
+function pump() {
+  if (speaking || !queue.length) return;
+  ensureTicker();
+  speaking = true;
+  const line = queue.shift();
+  const booth = BOOTH[line.speaker] || BOOTH.pbp;
+  remember(keyOf(line.speaker, line.text));
+  lastLineKey = keyOf(line.speaker, line.text);
+
+  speakerEl.textContent = booth.name + ':';
+  speakerEl.className = 'cm-speaker ' + booth.cls;
+  // Support BANG! marker for emphasized words
+  textEl.innerHTML =
+    '<span class="cm-fade">' + line.text.replace(/BANG!/g, '<span class="bang">BANG!</span>') + '</span>';
+  lineEl.classList.toggle('big', line.big);
+  tickerEl.classList.add('on');
+
+  setTimeout(() => {
+    tickerEl.classList.remove('on');
+    setTimeout(() => { speaking = false; pump(); }, 380);
+  }, lineDurationMs(line.text));
+}
+
+/* Convenience: pbp says, color answers (classic booth exchange) */
+function exchange(pbpText, colorText, big) {
+  say(pbpText, 'pbp', { big: !!big });
+  if (colorText) say(colorText, 'color');
+}
+
+/* ---------------- Game state tracking (for color commentary) ---------------- */
+const teams = {}; // abbr -> {name, fgM,fgA, t3M,t3A, run, oppRun, lastShots:[bool], pts}
+
+function team(abbr, name) {
+  if (!teams[abbr]) teams[abbr] = { abbr, name: name || abbr, fgM:0, fgA:0, t3M:0, t3A:0, run:0, oppRun:0, last:[] };
+  if (name) teams[abbr].name = name;
+  return teams[abbr];
+}
+
+function recordShot(abbr, name, made, isThree) {
+  const t = team(abbr, name);
+  t.fgA++; if (made) t.fgM++;
+  if (isThree) { t.t3A++; if (made) t.t3M++; }
+  t.last.push(made); if (t.last.length > 12) t.last.shift();
+  return t;
+}
+
+function recordScore(abbr, pts) {
+  for (const k in teams) {
+    if (k === abbr) { teams[k].run += pts; teams[k].oppRun = 0; }
+    else { teams[k].oppRun += pts; teams[k].run = 0; }
+  }
+}
+
+function threePct(t) { return t.t3A ? Math.round(100 * t.t3M / t.t3A) : 0; }
+function lastN(t, n) { return t.last.slice(-n); }
+function coldFromThree(t) { const l = lastN(t, 6).filter((_, i, a) => true); return t.t3A >= 5 && threePct(t) < 25; }
+
+/* ---------------- Helpers ---------------- */
+function andOne(n) { return n; }
+function qName(q) { return ['1ST','2ND','3RD','4TH'][q - 1] || (q + 'TH'); }
+
+/* ============================================================
+   TRIGGER FUNCTIONS — call these from game events
+   ctx: {shooter, teamAbbr, teamName, pts, quarter, secsLeft,
+         scoreU, scoreC, clutch, atBuzzer, defender, ...}
+   ============================================================ */
+
+const C = {};
+
+/* ---------
