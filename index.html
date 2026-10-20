@@ -1,12 +1,1983 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>COURTSIDE 27</title></head><body>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0906">
+<title>Courtside 27: Memories — a finals coaching story</title>
+<style>
+/* ============ COURTSIDE 27: MEMORIES — film-first mobile indie ============ */
+:root{
+  --ink:#f3ead9; --ink-dim:#c9bda3; --ink-faint:#8d8271;
+  --amber:#e8b34b; --amber-deep:#b97f26; --paper:#171208;
+  --panel:rgba(16,12,7,.88); --panel-line:rgba(232,179,75,.28);
+  --good:#7fc46a; --bad:#e0655a; --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:var(--sans); color:var(--ink); background:#060504; overflow:hidden;
+  touch-action:manipulation; -webkit-user-select:none; user-select:none;
+}
+#ambient{position:fixed; inset:-40px; background:url('assets/real/arena-wide.jpg') center/cover no-repeat;
+  filter:blur(28px) brightness(.42) saturate(.8); transform:scale(1.08); z-index:0}
+#ambientShade{position:fixed; inset:0; background:radial-gradient(120% 90% at 50% 40%, transparent 30%, rgba(0,0,0,.78) 100%); z-index:1}
+#phone{position:relative; z-index:2; margin:0 auto; width:100%; max-width:430px; height:100dvh;
+  background:#0b0906; overflow:hidden; box-shadow:0 0 90px rgba(0,0,0,.9), 0 0 0 1px rgba(232,179,75,.14)}
+@media (min-width:520px){ #phone{height:min(100dvh,932px); margin-top:max(0px, calc((100dvh - 932px)/2)); border-radius:6px} }
+.screen{position:absolute; inset:0; display:none; flex-direction:column; overflow:hidden}
+.screen.on{display:flex}
+/* ---------- film furniture ---------- */
+.grain{position:absolute; inset:-60px; pointer-events:none; z-index:40; opacity:.5; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+  animation:grainShift .42s steps(4) infinite}
+@keyframes grainShift{0%{transform:translate(0,0)}25%{transform:translate(-22px,14px)}50%{transform:translate(16px,-20px)}75%{transform:translate(-10px,-8px)}100%{transform:translate(0,0)}}
+.vignette{position:absolute; inset:0; pointer-events:none; z-index:39;
+  background:radial-gradient(115% 100% at 50% 46%, transparent 52%, rgba(4,2,0,.55) 100%)}
+.grade{position:absolute; inset:0; pointer-events:none; z-index:38; mix-blend-mode:soft-light;
+  background:linear-gradient(168deg, rgba(255,166,66,.30), rgba(20,40,80,.22) 78%)}
+.bar{position:absolute; left:0; right:0; height:46px; background:#000; z-index:41; pointer-events:none;
+  animation:breathe 9s ease-in-out infinite alternate}
+.bar.top{top:0}.bar.bot{bottom:0}
+@keyframes breathe{from{height:42px}to{height:54px}}
+/* ---------- typography ---------- */
+.kicker{font-size:11px; letter-spacing:.34em; text-transform:uppercase; color:var(--amber); font-weight:600}
+h1.title{font-family:var(--serif); font-weight:600; letter-spacing:.02em}
+.smallcaps{font-variant:small-caps; letter-spacing:.14em}
+.lede{font-family:var(--serif); font-style:italic; color:var(--ink-dim); font-size:15px; line-height:1.5}
+/* ---------- buttons ---------- */
+.btn{display:flex; align-items:center; justify-content:center; gap:8px; min-height:52px; padding:14px 22px;
+  border-radius:3px; border:1px solid var(--panel-line); background:linear-gradient(180deg, rgba(58,44,20,.92), rgba(32,24,12,.94));
+  color:var(--ink); font-family:var(--serif); font-size:17px; letter-spacing:.06em; cursor:pointer; text-align:center; width:100%}
+.btn:active{transform:scale(.985); filter:brightness(1.2)}
+.btn.primary{background:linear-gradient(180deg, #d99b2f, #a96f1c); color:#1c1204; border-color:#f0cd85; font-weight:700}
+.btn.ghost{background:rgba(10,8,5,.55); font-size:14px; min-height:46px}
+.btn:disabled{opacity:.45; pointer-events:none}
+.btnRow{display:flex; flex-direction:column; gap:10px}
+.backLink{font-size:12.5px; color:var(--ink-faint); text-decoration:underline; text-underline-offset:3px; text-align:center; padding:8px; cursor:pointer}
+/* ---------- generic panel page (hub sub-screens) ---------- */
+.page{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; padding:calc(62px + env(safe-area-inset-top)) 20px calc(70px + env(safe-area-inset-bottom)); gap:13px; overflow-y:auto}
+.page h2{font-family:var(--serif); font-size:29px; line-height:1.08}
+.pageBg{background:linear-gradient(180deg,#0d0a06,#070503)}
+.chip{border:1px solid var(--panel-line); background:var(--panel); padding:7px 11px; border-radius:3px; font-size:12px; letter-spacing:.08em}
+.chip b{color:var(--amber); font-weight:600}
+.panelCard{background:var(--panel); border:1px solid var(--panel-line); border-radius:5px; padding:14px 16px}
+.panelCard .row{display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; font-family:var(--serif); font-size:16px; gap:10px}
+.panelCard .row .sc{font-size:21px; white-space:nowrap}
+.panelCard .row.dim{color:var(--ink-dim); font-size:13px; font-family:var(--sans); letter-spacing:.04em}
+.panelCard .row.stack{flex-direction:column; align-items:flex-start; gap:1px}
+.panelCard .row.stack span:empty{display:none}
+.panelCard hr{border:none; border-top:1px solid rgba(255,255,255,.10); margin:7px 0}
+/* ---------- SPLASH ---------- */
+#scr-splash{background:#000; align-items:center; justify-content:center; cursor:pointer}
+#scr-splash .studio{text-align:center; padding:0 30px; animation:splashIn 1.6s ease both}
+@keyframes splashIn{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+#scr-splash .rule{width:64px; height:1px; background:var(--amber); margin:18px auto; opacity:.8}
+#scr-splash .sname{font-family:var(--serif); font-size:27px; letter-spacing:.22em; text-transform:uppercase}
+#scr-splash .stag{font-size:11px; letter-spacing:.4em; color:var(--ink-faint); text-transform:uppercase; margin-top:10px}
+#scr-splash .films{font-family:var(--serif); font-style:italic; color:var(--ink-dim); font-size:14px; margin-top:26px}
+/* ---------- TITLE ---------- */
+#scr-title .bgimg{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:50% 34%; background:#070606; animation:kbA 28s ease-in-out infinite alternate}
+@keyframes kbA{from{transform:scale(1.02) translate(0,0)}to{transform:scale(1.16) translate(-2.5%,2%)}}
+@keyframes kbB{from{transform:scale(1.15) translate(2%,-1%)}to{transform:scale(1.03) translate(-1%,1.5%)}}
+#scr-title .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,3,1,.5), rgba(5,3,1,.14) 34%, rgba(5,3,1,.34) 60%, rgba(5,3,1,.94) 100%); z-index:2}
+#scr-title .content{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+  padding:0 26px calc(84px + env(safe-area-inset-bottom)); gap:14px; text-align:center; align-items:center}
+#scr-title h1{font-size:52px; line-height:.96; text-shadow:0 3px 26px rgba(0,0,0,.8)}
+#scr-title h1 em{font-style:italic; color:var(--amber)}
+#scr-title .eras{font-size:11.5px; letter-spacing:.3em; color:var(--ink-dim); text-transform:uppercase}
+#pressStart{font-family:var(--serif); font-size:19px; letter-spacing:.24em; color:var(--ink); text-transform:uppercase;
+  margin-top:12px; cursor:pointer; animation:pulseTxt 2.2s ease-in-out infinite; padding:14px 30px}
+@keyframes pulseTxt{0%,100%{opacity:.55}50%{opacity:1}}
+/* ---------- LOADING (boot + pregame share the furniture) ---------- */
+.loadWrap{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; justify-content:flex-end; padding:0 26px calc(84px + env(safe-area-inset-bottom)); gap:13px}
+.loadBar{height:5px; background:rgba(255,255,255,.13); border-radius:3px; overflow:hidden}
+.loadBar i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#7d5a1c,var(--amber))}
+.loadMeta{display:flex; justify-content:space-between; font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--ink-faint)}
+.loadTip{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink-dim); line-height:1.45; min-height:44px}
+.loadWrap h2{font-family:var(--serif); font-size:30px; line-height:1.05}
+/* ---------- MAIN MENU ---------- */
+#scr-menu .bgimg{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:50% 4%; background:#070606; animation:kbA 26s ease-in-out infinite alternate}
+#scr-menu .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,3,1,.45), rgba(5,3,1,.12) 34%, rgba(5,3,1,.30) 62%, rgba(5,3,1,.93) 100%); z-index:2}
+#scr-menu .content{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+  padding:0 26px calc(74px + env(safe-area-inset-bottom)); gap:12px}
+#scr-menu h1{font-size:44px; line-height:.98; text-shadow:0 3px 26px rgba(0,0,0,.75)}
+#scr-menu h1 em{font-style:italic; color:var(--amber)}
+#scr-menu .sub{font-family:var(--serif); font-style:italic; font-size:15.5px; color:var(--ink-dim); line-height:1.45; max-width:330px; text-shadow:0 1px 12px rgba(0,0,0,.9), 0 0 3px rgba(0,0,0,.95)}
+#scr-menu .kicker, #scr-title .kicker{text-shadow:0 1px 8px rgba(0,0,0,.9)}
+#scr-title .sub{text-shadow:0 1px 12px rgba(0,0,0,.9), 0 0 3px rgba(0,0,0,.95)}
+#legacyChip{display:none; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-line);
+  border-radius:3px; padding:10px 13px; font-size:12.5px; letter-spacing:.05em}
+#legacyChip .rk{font-family:var(--serif); font-size:15px; color:var(--amber)}
+#legacyChip .xpbar{flex:1; height:4px; background:rgba(255,255,255,.14); border-radius:2px; overflow:hidden}
+#legacyChip .xpbar i{display:block; height:100%; background:var(--amber); width:0%}
+.menuBtns{display:flex; flex-direction:column; gap:9px}
+.tinyLink{font-size:12px; color:var(--ink-faint); text-decoration:underline; text-underline-offset:3px; text-align:center; padding:6px; cursor:pointer}
+/* ---------- TEAM SELECT ---------- */
+#scr-teams{background:linear-gradient(180deg,#0d0a06,#080604)}
+#scr-teams .head{padding:calc(64px + env(safe-area-inset-top)) 24px 6px; text-align:center}
+#scr-teams h2{font-family:var(--serif); font-size:30px; margin-top:8px}
+#scr-teams .head p{font-family:var(--serif); font-style:italic; color:var(--ink-dim); font-size:14.5px; margin-top:6px}
+#teamList{flex:1; display:flex; flex-direction:column; gap:13px; padding:16px 20px calc(22px + env(safe-area-inset-bottom)); justify-content:center}
+.team-card{position:relative; height:162px; border-radius:5px; overflow:hidden; border:1px solid rgba(255,255,255,.16); cursor:pointer; flex:none}
+.team-card:active{transform:scale(.99)}
+.team-card img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:kbB 22s ease-in-out infinite alternate}
+.team-card .shade{position:absolute; inset:0; background:linear-gradient(92deg, rgba(4,3,2,.88) 28%, rgba(4,3,2,.36) 64%, rgba(4,3,2,.08))}
+.team-card .band{position:absolute; left:0; top:0; bottom:0; width:6px}
+.team-card .tc{position:absolute; z-index:2; left:20px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center; gap:3px}
+.team-card .yr{font-family:var(--serif); font-size:15px; color:var(--amber); letter-spacing:.18em}
+.team-card .city{font-size:11px; letter-spacing:.32em; color:var(--ink-dim); text-transform:uppercase}
+.team-card .name{font-family:var(--serif); font-size:33px; line-height:1}
+.team-card .flav{font-family:var(--serif); font-style:italic; font-size:13px; color:var(--ink-dim)}
+.team-card .rec{font-size:10.5px; letter-spacing:.16em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px}
+.team-card .chev{position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:26px; color:var(--amber); z-index:2}
+/* ---------- DOSSIER ---------- */
+#dosHero{position:relative; height:216px; flex:none; overflow:hidden}
+#dosHero img{width:100%; height:100%; object-fit:cover; animation:kbA 20s ease-in-out infinite alternate}
+#dosHero .shade{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,3,1,.38), rgba(5,3,1,.06) 45%, rgba(10,8,5,.97))}
+#dosHero .htxt{position:absolute; left:20px; right:20px; bottom:12px; z-index:2}
+#dosHero .htxt .yr{font-family:var(--serif); color:var(--amber); letter-spacing:.2em; font-size:14px}
+#dosHero .htxt h2{font-family:var(--serif); font-size:32px; line-height:1.02}
+.strength li{font-size:13.5px; color:var(--ink-dim); line-height:1.5; margin-left:16px; margin-bottom:2px}
+.strength li b{color:var(--ink)}
+/* ---------- roster rows / photo cards ---------- */
+.rosterGrid{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+.pcard{border:1px solid rgba(255,255,255,.13); border-radius:5px; overflow:hidden; background:rgba(255,255,255,.03)}
+.pcard .ph{height:108px; position:relative; overflow:hidden; background:#0a0806}
+.pcard .ph img{width:100%; height:100%; object-fit:cover; object-position:50% 16%; display:block; filter:saturate(.94) contrast(1.03)}
+.pcard .pi{padding:8px 10px 9px}
+.pcard .pn2{font-family:var(--serif); font-size:14.5px; line-height:1.15}
+.pcard .pm{font-size:10.5px; letter-spacing:.12em; color:var(--ink-faint); text-transform:uppercase; margin-top:3px; display:flex; justify-content:space-between; gap:6px}
+.pcard .pm .st{color:var(--amber); letter-spacing:.02em; text-transform:none; font-size:11px}
+/* name-plate: no surviving film */
+.plate{height:100%; min-height:108px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  background:radial-gradient(120% 100% at 50% 30%, #241b0e, #0d0a05 75%); text-align:center; padding:10px 8px; position:relative}
+.plate::before,.plate::after{content:""; position:absolute; left:6px; right:6px; height:7px;
+  background:radial-gradient(circle 2.4px at 7px 3.5px, rgba(240,230,210,.5) 2.2px, transparent 2.8px) 0 0/22px 7px repeat-x}
+.plate::before{top:5px}.plate::after{bottom:5px}
+.plate .num{font-family:var(--serif); font-size:34px; color:var(--amber); line-height:1}
+.plate .nm{font-family:var(--serif); font-size:14px; letter-spacing:.06em; line-height:1.2}
+.plate .nsf{font-size:8.5px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px}
+/* ---------- COACH CREATION ---------- */
+#coachName{width:100%; background:rgba(255,255,255,.05); border:1px solid var(--panel-line); border-radius:4px; color:var(--ink);
+  font-family:var(--serif); font-size:19px; padding:13px 14px; outline:none}
+#coachName:focus{border-color:var(--amber)}
+.ident{border:1px solid rgba(255,255,255,.14); border-radius:5px; padding:14px 15px; cursor:pointer; background:rgba(255,255,255,.03)}
+.ident.sel{border-color:var(--amber); background:rgba(232,179,75,.13); box-shadow:0 0 0 1px var(--amber) inset}
+.ident .in2{font-family:var(--serif); font-size:18px}
+.ident .id2{font-size:12.5px; color:var(--ink-dim); line-height:1.45; margin-top:3px}
+.ident .ib{font-size:11px; letter-spacing:.1em; color:var(--amber); text-transform:uppercase; margin-top:7px}
+/* ---------- HUB ---------- */
+#hubSched{display:flex; gap:5px}
+.gslot{flex:1; text-align:center; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); border-radius:3px; padding:7px 1px}
+.gslot .gl{font-size:9px; letter-spacing:.18em; color:var(--ink-faint)}
+.gslot .gs{font-family:var(--serif); font-size:13.5px; margin-top:2px}
+.gslot.won{border-color:rgba(127,196,106,.5)} .gslot.won .gs{color:var(--good)}
+.gslot.lost{border-color:rgba(224,101,90,.45)} .gslot.lost .gs{color:var(--bad)}
+.gslot.next{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset}
+.hubTiles{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+.tile{position:relative; border:1px solid rgba(255,255,255,.13); border-radius:5px; padding:15px 14px; cursor:pointer; background:rgba(255,255,255,.03); min-height:78px}
+.tile:active{transform:scale(.985)}
+.tile .tt{font-family:var(--serif); font-size:17.5px}
+.tile .td{font-size:11.5px; color:var(--ink-faint); margin-top:3px; line-height:1.4}
+.tile .badge{position:absolute; top:10px; right:10px; background:var(--amber); color:#1c1204; font-size:10.5px; font-weight:700;
+  border-radius:9px; min-width:18px; height:18px; display:flex; align-items:center; justify-content:center; padding:0 5px}
+/* objectives / inbox */
+.obj{display:flex; gap:11px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.08)}
+.obj:last-child{border-bottom:none}
+.obj .box{flex:none; width:22px; height:22px; border:1.5px solid var(--ink-faint); border-radius:3px; margin-top:2px; display:flex; align-items:center; justify-content:center; color:var(--amber); font-size:15px}
+.obj.done .box{border-color:var(--amber); background:rgba(232,179,75,.15)}
+.obj .ot{font-family:var(--serif); font-size:15.5px}
+.obj .od{font-size:12px; color:var(--ink-dim); line-height:1.45; margin-top:2px}
+.obj .ox{font-size:11px; color:var(--amber); letter-spacing:.1em; margin-top:3px; text-transform:uppercase}
+.obj.done .ot,.obj.done .od{color:var(--ink-faint)}
+.note{padding:11px 0; border-bottom:1px solid rgba(255,255,255,.08)}
+.note:last-child{border-bottom:none}
+.note .nk{font-size:10px; letter-spacing:.28em; color:var(--amber); text-transform:uppercase}
+.note .nt{font-size:13.5px; color:var(--ink-dim); line-height:1.5; margin-top:4px}
+.note .nt b{color:var(--ink)}
+/* ---------- PREGAME ---------- */
+#scr-pregame{background:linear-gradient(180deg,#0c0906,#060403)}
+.starsRow{display:flex; gap:8px; align-items:stretch}
+.starMini{flex:1; border:1px solid rgba(255,255,255,.13); border-radius:5px; overflow:hidden; background:rgba(255,255,255,.03)}
+.starMini .ph{height:86px; overflow:hidden}
+.starMini .ph img{width:100%; height:100%; object-fit:cover; object-position:50% 14%; display:block}
+.starMini .plate{min-height:86px}
+.starMini .plate .num{font-size:24px}
+.starMini .sn{font-size:10.5px; text-align:center; padding:6px 3px; font-family:var(--serif); line-height:1.2}
+.vsCol{flex:none; display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-style:italic; color:var(--amber); font-size:15px; padding:0 1px}
+/* ---------- INTRO ---------- */
+#scr-intro{background:#000}
+#introWrap{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000}
+#introVideo{width:100%; height:100%; object-fit:contain; background:#000}
+#introFallback{position:absolute; inset:0; display:none}
+#introFallback img{width:100%; height:100%; object-fit:cover; animation:kbA 14s ease-in-out infinite alternate}
+#introCap{position:absolute; z-index:45; left:0; right:0; bottom:calc(168px + env(safe-area-inset-bottom)); text-align:center; pointer-events:none}
+#introCap .kicker{text-shadow:0 2px 12px #000}
+#introCap .tname{font-family:var(--serif); font-size:29px; text-shadow:0 2px 16px #000}
+#btnSkipIntro{position:absolute; z-index:46; right:16px; bottom:calc(66px + env(safe-area-inset-bottom)); min-height:44px; padding:10px 18px; font-size:13px; width:auto}
+/* ---------- CHAPTER CARD ---------- */
+#scr-chapter .bgimg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:kbA 24s ease-in-out infinite alternate; filter:brightness(.8)}
+#scr-chapter .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,3,1,.55), rgba(5,3,1,.25) 40%, rgba(5,3,1,.9)); z-index:2}
+#scr-chapter .content{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; justify-content:flex-end; padding:0 26px calc(78px + env(safe-area-inset-bottom)); gap:12px}
+#chapterGame{font-size:12px; letter-spacing:.36em; color:var(--amber); text-transform:uppercase}
+#chapterTitle{font-family:var(--serif); font-size:40px; line-height:1.04}
+#chapterBody{font-family:var(--serif); font-style:italic; color:var(--ink-dim); font-size:15.5px; line-height:1.5}
+#chapterMeta{display:flex; gap:8px; flex-wrap:wrap}
+/* ---------- GAME SCREEN ---------- */
+#scr-game{background:#0a0805}
+#bug{position:relative; z-index:30; margin-top:46px; padding:10px 14px 8px; background:linear-gradient(180deg, rgba(8,6,3,.96), rgba(8,6,3,.86));
+  border-bottom:1px solid rgba(232,179,75,.22); display:flex; align-items:center; gap:10px}
+#bug .tm{font-family:var(--serif); font-size:14px; letter-spacing:.04em; white-space:nowrap}
+#bug .tm b{font-size:21px; font-weight:700; margin-left:5px}
+#bug .mid{flex:1; text-align:center}
+#bugClock{font-family:var(--serif); font-size:19px; color:var(--amber); line-height:1}
+#bugMeta{font-size:10px; letter-spacing:.22em; color:var(--ink-faint); text-transform:uppercase; margin-top:3px}
+#bug .pips{display:flex; gap:4px; justify-content:center; margin-top:4px}
+.pip{width:7px; height:7px; border-radius:50%; border:1px solid var(--ink-faint)}
+.pip.won{background:var(--amber); border-color:var(--amber)}
+.pip.lost{background:rgba(255,255,255,.16)}
+#wpLine{display:flex; align-items:center; gap:8px; padding:7px 14px 2px; font-size:11px; letter-spacing:.1em; color:var(--ink-dim); position:relative; z-index:30}
+#wpBar{flex:1; height:5px; background:rgba(255,255,255,.10); border-radius:3px; position:relative; overflow:hidden}
+#wpFill{position:absolute; inset:0; width:50%; background:linear-gradient(90deg,#7d5a1c,var(--amber)); transition:width .8s ease}
+#wpPct{font-family:var(--serif); color:var(--amber); font-size:13px; min-width:66px; text-align:right}
+#momLine{display:flex; align-items:center; gap:8px; padding:5px 14px 8px; font-size:10px; letter-spacing:.2em; color:var(--ink-faint); position:relative; z-index:30}
+#momTrack{flex:1; height:6px; border-radius:3px; background:linear-gradient(90deg, rgba(224,101,90,.55), rgba(255,255,255,.10) 50%, rgba(127,196,106,.55)); position:relative}
+#momNeedle{position:absolute; top:-3px; width:3px; height:12px; background:var(--ink); border-radius:2px; left:50%; transition:left .8s cubic-bezier(.2,.8,.2,1); box-shadow:0 0 8px rgba(0,0,0,.8)}
+/* the memory stage */
+#stage{position:relative; margin:2px 12px 0; border-radius:4px; overflow:hidden; aspect-ratio:16/10.4; background:#000;
+  box-shadow:0 14px 40px rgba(0,0,0,.65), 0 0 0 1px rgba(232,179,75,.16); flex:none}
+#stage .still{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; will-change:transform,opacity; z-index:2}
+#stage .still.show{opacity:1}
+#stage .still.kb1{animation:kbA 15s ease-in-out infinite alternate}
+#stage .still.kb2{animation:kbB 15s ease-in-out infinite alternate}
+#stageVid{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; z-index:3; background:#000}
+#stageVid.show{opacity:1}
+#stageBlur{position:absolute; inset:0; z-index:1; background-size:cover; background-position:center; filter:blur(20px) brightness(.45) saturate(.85); opacity:0; transform:scale(1.15)}
+#stageBlur.show{opacity:1}
+#stage.portrait .still{object-fit:contain; animation:none; transform:none}
+#stage.portrait .sbar{height:34px}
+#stageShade{position:absolute; inset:0; z-index:5; pointer-events:none;
+  background:linear-gradient(180deg, rgba(0,0,0,.28), transparent 26%, transparent 66%, rgba(0,0,0,.55))}
+#stage .sbar{position:absolute; left:0; right:0; height:26px; background:#000; z-index:8; pointer-events:none; transition:height .5s ease}
+#stage .sbar.top{top:0}#stage .sbar.bot{bottom:0}
+#stage.pulse .sbar{height:40px}
+#stage.pulse .still.show, #stage.pulse #stageVid.show{animation:pulseZoom 1.15s ease-out}
+@keyframes pulseZoom{0%{transform:scale(1.02)}35%{transform:scale(1.17)}100%{transform:scale(1.06)}}
+#stage .leak{position:absolute; inset:-20%; z-index:6; pointer-events:none; mix-blend-mode:screen; opacity:.5;
+  background:radial-gradient(38% 30% at 18% 12%, rgba(255,120,50,.34), transparent 70%), radial-gradient(30% 26% at 86% 84%, rgba(255,190,90,.22), transparent 70%);
+  animation:leakDrift 11s ease-in-out infinite alternate}
+@keyframes leakDrift{from{transform:translate(-2%,-1%) rotate(0deg)}to{transform:translate(2.5%,2%) rotate(1.5deg)}}
+#stage .grain{inset:-40px; z-index:9}
+#stage.pulse .grain{opacity:.95}
+#burn{position:absolute; inset:0; z-index:10; pointer-events:none; opacity:0;
+  background:radial-gradient(90% 90% at 50% 50%, rgba(255,236,190,.95), rgba(255,140,40,.55) 55%, transparent 78%)}
+#burn.go{animation:burnFlash .5s ease-out}
+@keyframes burnFlash{0%{opacity:0}22%{opacity:.85}100%{opacity:0}}
+#stageCap{position:absolute; z-index:11; left:0; right:0; bottom:34px; text-align:center; pointer-events:none; padding:0 22px}
+#stageCap .cap-k{font-size:10px; letter-spacing:.32em; color:var(--amber); text-transform:uppercase; text-shadow:0 1px 8px #000}
+#stageCap .cap-t{font-family:var(--serif); font-style:italic; font-size:17px; color:#fff; text-shadow:0 2px 14px rgba(0,0,0,.9); margin-top:3px; line-height:1.3}
+#cpuNote{position:absolute; z-index:12; top:34px; right:10px; background:rgba(90,16,10,.88); border:1px solid rgba(255,120,100,.5);
+  color:#ffd9d2; font-size:10.5px; letter-spacing:.14em; padding:6px 9px; border-radius:3px; text-transform:uppercase; display:none}
+/* commentary */
+#feed{position:relative; z-index:20; padding:10px 16px 2px; min-height:74px}
+#feed .pbp{font-size:15.5px; line-height:1.35; font-weight:600}
+#feed .pbp.big{color:var(--amber)}
+#feed .color{font-family:var(--serif); font-style:italic; font-size:14px; color:var(--ink-dim); line-height:1.4; margin-top:3px}
+#feed .fadein{animation:feedIn .45s ease}
+@keyframes feedIn{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+/* clipboard bottom sheet */
+#sheet{position:relative; z-index:30; margin-top:auto; background:linear-gradient(180deg, rgba(14,10,6,.97), rgba(9,7,4,.99));
+  border-top:1px solid rgba(232,179,75,.25); padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
+#sheet .grab{width:42px; height:4px; border-radius:2px; background:rgba(255,255,255,.22); margin:0 auto 9px}
+.grpLabel{font-size:10px; letter-spacing:.26em; color:var(--ink-faint); text-transform:uppercase; display:flex; justify-content:space-between; margin:7px 2px 6px}
+.grpLabel .adj{color:#ff9a8a; letter-spacing:.1em}
+.pickRow{display:flex; gap:7px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none}
+.pickRow::-webkit-scrollbar{display:none}
+.pick{flex:1 0 auto; min-width:86px; min-height:48px; padding:8px 10px; border-radius:4px; cursor:pointer;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.045); text-align:center}
+.pick .pn{font-family:var(--serif); font-size:14.5px; line-height:1.1}
+.pick .pd{font-size:10px; color:var(--ink-faint); letter-spacing:.04em; margin-top:2px}
+.pick.sel{border-color:var(--amber); background:rgba(232,179,75,.16); box-shadow:0 0 0 1px var(--amber) inset}
+.pick.locked{opacity:.42; border-style:dashed}
+#btnRun{width:100%; margin-top:11px}
+#sheetNote{text-align:center; font-size:11.5px; color:var(--ink-faint); margin-top:8px; font-family:var(--serif); font-style:italic; min-height:15px}
+/* decision event card */
+#eventCard{position:absolute; z-index:60; left:16px; right:16px; bottom:calc(18px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(26,19,10,.98), rgba(14,10,6,.99)); border:1px solid var(--amber);
+  border-radius:6px; padding:18px; box-shadow:0 22px 60px rgba(0,0,0,.8); display:none}
+#eventCard .kicker{margin-bottom:6px}
+#eventPhoto{height:118px; border-radius:4px; overflow:hidden; margin-bottom:11px; display:none; position:relative; background:#000}
+#eventPhoto img{width:100%; height:100%; object-fit:cover; object-position:50% 18%; display:block}
+#eventPhoto .plate{min-height:118px}
+#eventTitle{font-family:var(--serif); font-size:21px; line-height:1.15}
+#eventBody{font-size:13.5px; color:var(--ink-dim); line-height:1.45; margin:8px 0 13px}
+.eventChoices{display:flex; flex-direction:column; gap:9px}
+.event-choice{min-height:50px}
+/* ---------- RECAP / FILM STRIP ---------- */
+.stripWrap{background:#050403; border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); padding:10px 0}
+.strip{display:flex; gap:8px; overflow-x:auto; padding:14px 16px; scrollbar-width:none;
+  background:
+   radial-gradient(circle 3.2px at 8px 6px, rgba(240,230,210,.85) 3px, transparent 3.6px) 0 0/26px 12px repeat-x,
+   radial-gradient(circle 3.2px at 8px 6px, rgba(240,230,210,.85) 3px, transparent 3.6px) 0 100%/26px 12px repeat-x}
+.strip::-webkit-scrollbar{display:none}
+.frame{flex:none; width:148px; border-radius:2px; overflow:hidden; position:relative; box-shadow:0 0 0 1px rgba(255,255,255,.18); background:#0a0806}
+.frame img{width:100%; height:92px; object-fit:cover; display:block; filter:saturate(.92) contrast(1.03)}
+.frame .fl{position:absolute; left:0; right:0; bottom:0; background:linear-gradient(0deg, rgba(0,0,0,.82), transparent); color:#fff;
+  font-size:9.5px; letter-spacing:.14em; padding:12px 7px 5px; text-transform:uppercase}
+#scr-recap, #scr-gameover, #scr-series{background:linear-gradient(180deg,#0c0906,#070503)}
+.endContent{position:relative; z-index:5; flex:1; display:flex; flex-direction:column; padding:calc(60px + env(safe-area-inset-top)) 22px calc(74px + env(safe-area-inset-bottom)); gap:13px; overflow-y:auto}
+.endContent h2{font-family:var(--serif); font-size:31px; line-height:1.08}
+.endContent .lede{font-family:var(--serif); font-style:italic; color:var(--ink-dim); font-size:15px; line-height:1.5}
+.endBtns{display:flex; flex-direction:column; gap:10px; margin-top:auto}
+.qline{display:flex; gap:5px; flex-wrap:wrap}
+.qbox{flex:1; min-width:56px; text-align:center; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:3px; padding:6px 2px}
+.qbox .ql{font-size:9px; letter-spacing:.2em; color:var(--ink-faint)}
+.qbox .qs{font-family:var(--serif); font-size:14px; margin-top:2px}
+/* press conference */
+.pressQ{font-family:var(--serif); font-size:21px; line-height:1.3}
+.pressQ::before{content:"“ "; color:var(--amber)} .pressQ::after{content:" ”"; color:var(--amber)}
+.ansBtn{text-align:left; justify-content:flex-start; font-size:15.5px; min-height:52px}
+#pressNote{font-family:var(--serif); font-style:italic; color:var(--amber); font-size:14.5px; min-height:20px; line-height:1.45}
+/* series end hero */
+#seriesHero{position:relative; height:238px; flex:none; overflow:hidden; background:#000}
+#seriesHero img, #seriesHero video{width:100%; height:100%; object-fit:cover; display:block}
+#seriesHero img{animation:kbA 20s ease-in-out infinite alternate}
+#seriesHero .shade{position:absolute; inset:0; background:linear-gradient(180deg, rgba(5,3,1,.30), rgba(5,3,1,.06) 45%, rgba(7,5,3,.96))}
+/* confetti (CSS only — no trophy image exists; never fake one) */
+#confetti{position:absolute; inset:0; z-index:35; pointer-events:none; overflow:hidden; display:none}
+#confetti i{position:absolute; top:-14px; width:7px; height:12px; opacity:.9; animation:confFall linear infinite}
+@keyframes confFall{to{transform:translateY(110vh) rotate(660deg)}}
+/* toast */
+#toast{position:absolute; z-index:80; left:50%; transform:translate(-50%,-16px); top:calc(58px + env(safe-area-inset-top));
+  background:linear-gradient(180deg,#2c1f0d,#191104); border:1px solid var(--amber); color:var(--ink); border-radius:5px;
+  padding:12px 18px; font-family:var(--serif); font-size:15px; text-align:center; opacity:0; pointer-events:none; transition:all .4s ease; max-width:86%;
+  box-shadow:0 16px 44px rgba(0,0,0,.7)}
+#toast.show{opacity:1; transform:translate(-50%,0)}
+#toast .tk{font-size:10px; letter-spacing:.3em; color:var(--amber); display:block; margin-bottom:3px; font-family:var(--sans)}
+/* how-to modal */
+#howto{position:absolute; inset:0; z-index:90; background:rgba(4,3,1,.9); display:none; align-items:center; justify-content:center; padding:24px}
+#howto .card{background:#14100a; border:1px solid var(--panel-line); border-radius:6px; padding:22px; max-height:82%; overflow-y:auto}
+#howto h3{font-family:var(--serif); font-size:22px; margin-bottom:10px}
+#howto p{font-size:13.5px; color:var(--ink-dim); line-height:1.55; margin-bottom:9px}
+#howto b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="ambient"></div>
+<div id="ambientShade"></div>
+<div id="phone">
+
+  <!-- ============ SPLASH ============ -->
+  <section class="screen on" id="scr-splash">
+    <div class="grain"></div>
+    <div class="studio">
+      <div class="kicker" style="letter-spacing:.5em">A film in twelve beats</div>
+      <div class="rule"></div>
+      <div class="sname">Halflight<br>Studio</div>
+      <div class="stag">presents</div>
+      <div class="films">shot on real film · 2008 · 2013 · 2017</div>
+    </div>
+  </section>
+
+  <!-- ============ TITLE ============ -->
+  <section class="screen" id="scr-title">
+    <img class="bgimg" src="assets/real/arena-wide.jpg" alt="">
+    <div class="scrim"></div><div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="content">
+      <div class="kicker">The Finals · A coaching story</div>
+      <h1 class="title">Courtside 27<br><em>Memories</em></h1>
+      <div class="eras">2008 Celtics · 2013 Heat · 2017 Warriors</div>
+      <div id="pressStart">Press to start</div>
+    </div>
+  </section>
+
+  <!-- ============ BOOT LOADING ============ -->
+  <section class="screen pageBg" id="scr-loading">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="loadWrap">
+      <div class="kicker">Loading the film</div>
+      <h2 id="loadTitle">Threading the projector…</h2>
+      <p class="loadTip" id="loadTip"></p>
+      <div class="loadBar"><i id="loadFill"></i></div>
+      <div class="loadMeta"><span id="loadLabel">Reels &amp; rosters</span><span id="loadPct">0%</span></div>
+    </div>
+  </section>
+
+  <!-- ============ MAIN MENU ============ -->
+  <section class="screen" id="scr-menu">
+    <img class="bgimg" src="assets/real/arena-wide.jpg" alt="">
+    <div class="scrim"></div><div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="content">
+      <div class="kicker">An indie coaching story · The Finals</div>
+      <h1 class="title">Courtside 27<br><em>Memories</em></h1>
+      <p class="sub">No joystick. No reflexes. Just the chess match — coached through real film of three championship teams.</p>
+      <div id="legacyChip">
+        <span class="rk" id="chipRank">Assistant</span>
+        <span class="xpbar"><i id="chipXpFill"></i></span>
+        <span id="chipXp">0 XP</span>
+      </div>
+      <div class="menuBtns">
+        <button class="btn primary" id="btnNew">New Finals</button>
+        <button class="btn" id="btnContinue" style="display:none">Continue the Finals</button>
+        <button class="btn ghost" id="btnMenuLegacy">Coach Legacy</button>
+        <button class="btn ghost" id="btnMenuRosters">Rosters</button>
+        <button class="btn ghost" id="btnHow">How it works</button>
+      </div>
+      <div class="tinyLink" id="btnResetAll">erase the legacy, the save — everything</div>
+    </div>
+  </section>
+
+  <!-- ============ TEAM SELECT ============ -->
+  <section class="screen" id="scr-teams">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="head">
+      <div class="kicker">One team · One film</div>
+      <h2>Whose memory is this?</h2>
+      <p>Only your team's intro survives the years. Choose carefully.</p>
+    </div>
+    <div id="teamList"></div>
+    <div class="backLink" id="btnTeamsBack">‹ back</div>
+  </section>
+
+  <!-- ============ TEAM DOSSIER ============ -->
+  <section class="screen pageBg" id="scr-dossier">
+    <div id="dosHero"><img id="dosHeroImg" src="assets/real/arena-wide.jpg" alt=""><div class="shade"></div>
+      <div class="htxt"><div class="yr" id="dosYr">2008</div><h2 id="dosName">Boston Celtics</h2></div>
+    </div>
+    <div class="page" style="padding-top:16px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="dosMeta"></div>
+      <p class="lede" id="dosRemember"></p>
+      <div>
+        <div class="kicker" style="margin-bottom:7px">What they do to you</div>
+        <ul class="strength" id="dosStrengths"></ul>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:9px">The roster — as it was</div>
+        <div class="rosterGrid" id="dosRoster"></div>
+      </div>
+      <div class="btnRow">
+        <button class="btn primary" id="btnDosConfirm">This is my team ▸</button>
+        <div class="backLink" id="btnDosBack">‹ choose again</div>
+      </div>
+    </div>
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+  </section>
+
+  <!-- ============ COACH CREATION ============ -->
+  <section class="screen pageBg" id="scr-coach">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker">The man in the suit</div>
+      <h2>Who's coaching them?</h2>
+      <p class="lede">Every memory needs a narrator. In this one, it's the coach — the only person who never touches the ball and decides everything.</p>
+      <div>
+        <div class="kicker" style="margin-bottom:8px">Your name, as the papers will print it</div>
+        <input id="coachName" maxlength="24" autocomplete="off" value="Avery">
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:9px">Your identity on the bench</div>
+        <div class="btnRow" id="identList"></div>
+      </div>
+      <div class="btnRow" style="margin-top:auto">
+        <button class="btn primary" id="btnCoachGo">Take the job ▸</button>
+        <div class="backLink" id="btnCoachBack">‹ back to the dossier</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERIES HUB ============ -->
+  <section class="screen pageBg" id="scr-hub">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker" id="hubKicker">The Finals · Series tied</div>
+      <h2 id="hubTitle">The Series Hub</h2>
+      <p class="lede" id="hubCoachLine"></p>
+      <div id="hubSched"></div>
+      <button class="btn primary" id="btnHubNext">Game 1 — take the floor ▸</button>
+      <div class="hubTiles">
+        <div class="tile" id="tileRoster"><div class="tt">Roster</div><div class="td">Your men, their film, their series so far.</div></div>
+        <div class="tile" id="tilePlan"><div class="tt">Gameplan</div><div class="td">The calls you walk in with. He scouts them too.</div></div>
+        <div class="tile" id="tileObj"><div class="tt">Objectives</div><div class="td">What the front office wants. What it's worth.</div><span class="badge" id="objBadge" style="display:none">0</span></div>
+        <div class="tile" id="tileInbox"><div class="tt">Inbox</div><div class="td">Notes from the office, the papers, the past.</div><span class="badge" id="inboxBadge" style="display:none">0</span></div>
+        <div class="tile" id="tileLegacy"><div class="tt">Coach Legacy</div><div class="td">Rank, XP, and the calls you've unlocked.</div></div>
+        <div class="tile" id="tileMenu"><div class="tt">Main menu</div><div class="td">Step away. The series will keep.</div></div>
+      </div>
+      <p class="lede" id="hubFlavor" style="font-size:13.5px"></p>
+    </div>
+  </section>
+
+  <!-- ============ ROSTER (hub) ============ -->
+  <section class="screen pageBg" id="scr-roster">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker" id="rosKicker">Your roster</div>
+      <h2 id="rosTitle">The men</h2>
+      <p class="lede" id="rosSub"></p>
+      <div class="rosterGrid" id="rosGrid"></div>
+      <div class="btnRow" style="margin-top:auto"><button class="btn ghost" id="btnRosBack">‹ back to the hub</button></div>
+    </div>
+  </section>
+
+  <!-- ============ GAMEPLAN ============ -->
+  <section class="screen pageBg" id="scr-gameplan">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker">The whiteboard, before the storm</div>
+      <h2>Gameplan</h2>
+      <p class="lede">These are the calls already on the clipboard when the game starts. You can still change them beat to beat — he knows that, too.</p>
+      <div>
+        <div class="grpLabel"><span>Opening play</span></div>
+        <div class="pickRow" id="planOff"></div>
+        <div class="grpLabel"><span>Opening scheme</span></div>
+        <div class="pickRow" id="planDef"></div>
+        <div class="grpLabel"><span>Opening tempo</span></div>
+        <div class="pickRow" id="planTempo"></div>
+      </div>
+      <p class="lede" id="planNote" style="font-size:13.5px"></p>
+      <div class="btnRow" style="margin-top:auto"><button class="btn primary" id="btnPlanBack">Save &amp; back ▸</button></div>
+    </div>
+  </section>
+
+  <!-- ============ OBJECTIVES ============ -->
+  <section class="screen pageBg" id="scr-objectives">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker">From the front office</div>
+      <h2>Objectives</h2>
+      <p class="lede">Ownership doesn't ask for much. Just everything, on film, forever.</p>
+      <div class="panelCard" id="objList"></div>
+      <div class="btnRow" style="margin-top:auto"><button class="btn ghost" id="btnObjBack">‹ back to the hub</button></div>
+    </div>
+  </section>
+
+  <!-- ============ INBOX ============ -->
+  <section class="screen pageBg" id="scr-inbox">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker">Pinned to the locker-room board</div>
+      <h2>Inbox</h2>
+      <div class="panelCard" id="inboxList"></div>
+      <div class="btnRow" style="margin-top:auto"><button class="btn ghost" id="btnInboxBack">‹ back to the hub</button></div>
+    </div>
+  </section>
+
+  <!-- ============ LEGACY ============ -->
+  <section class="screen pageBg" id="scr-legacy">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker">How they'll remember you</div>
+      <h2>Coach Legacy</h2>
+      <div id="legBody"></div>
+      <div class="btnRow" style="margin-top:auto"><button class="btn ghost" id="btnLegBack">‹ back</button></div>
+    </div>
+  </section>
+
+  <!-- ============ PREGAME LOADING ============ -->
+  <section class="screen" id="scr-pregame">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker" id="preKicker">Game 1 · The matchup</div>
+      <h2 id="preTitle" style="font-family:var(--serif); font-size:29px">Boston vs Miami</h2>
+      <div>
+        <div class="kicker" style="margin-bottom:8px" id="preYouLabel">Your stars</div>
+        <div class="starsRow" id="preStarsYou"></div>
+      </div>
+      <div>
+        <div class="kicker" style="margin-bottom:8px" id="preCpuLabel">Their stars</div>
+        <div class="starsRow" id="preStarsCpu"></div>
+      </div>
+      <div class="panelCard">
+        <div class="kicker" style="margin-bottom:7px">Keys to the game</div>
+        <ul class="strength" id="preKeys"></ul>
+      </div>
+      <div style="margin-top:auto">
+        <p class="loadTip" id="preTip" style="min-height:24px"></p>
+        <div class="loadBar"><i id="preFill"></i></div>
+        <div class="loadMeta"><span>Loading the matchup</span><span id="prePct">0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INTRO ============ -->
+  <section class="screen" id="scr-intro">
+    <div id="introWrap">
+      <video id="introVideo" playsinline muted preload="auto"></video>
+      <div id="introFallback"><img id="introFallbackImg" src="assets/real/arena-wide.jpg" alt=""></div>
+    </div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="grain"></div>
+    <div id="introCap"><div class="kicker">The Finals · Team Intro</div><div class="tname" id="introTeamName"></div></div>
+    <button class="btn ghost" id="btnSkipIntro">Tap to skip ▸</button>
+  </section>
+
+  <!-- ============ CHAPTER CARD ============ -->
+  <section class="screen" id="scr-chapter">
+    <img class="bgimg" id="chapterBg" src="assets/real/huddle.jpg" alt="">
+    <div class="scrim"></div><div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="content">
+      <div id="chapterGame">Game 1</div>
+      <h2 id="chapterTitle">Memory I — The Tip</h2>
+      <p id="chapterBody"></p>
+      <div id="chapterMeta"></div>
+      <button class="btn primary" id="btnFloor">Take the floor</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section class="screen" id="scr-game">
+    <div class="bar top"></div>
+    <div id="bug">
+      <div class="tm" id="bugYou">YOU <b>0</b></div>
+      <div class="mid">
+        <div id="bugClock">12:00</div>
+        <div id="bugMeta">1st Quarter · Game 1</div>
+        <div class="pips" id="seriesPips"></div>
+      </div>
+      <div class="tm" id="bugCpu" style="text-align:right">CPU <b>0</b></div>
+    </div>
+    <div id="wpLine"><span class="smallcaps">Win&nbsp;prob</span><div id="wpBar"><div id="wpFill"></div></div><span id="wpPct">50%</span></div>
+    <div id="momLine"><span>THEM</span><div id="momTrack"><div id="momNeedle"></div></div><span>MOMENTUM</span><span style="margin-left:auto">YOU</span></div>
+    <div id="stage">
+      <div id="stageBlur"></div>
+      <img class="still show kb1" id="stillA" src="assets/real/huddle.jpg" alt="">
+      <img class="still kb2" id="stillB" src="assets/real/arena-wide.jpg" alt="">
+      <video id="stageVid" muted playsinline loop preload="auto"></video>
+      <div id="stageShade"></div>
+      <div class="leak"></div>
+      <div class="sbar top"></div><div class="sbar bot"></div>
+      <div class="grain"></div>
+      <div id="burn"></div>
+      <div id="cpuNote">CPU adjusted</div>
+      <div id="stageCap"><div class="cap-k" id="capK">Pregame</div><div class="cap-t" id="capT">The huddle breaks. The memory begins.</div></div>
+    </div>
+    <div id="feed">
+      <div class="pbp" id="feedPbp">Twelve beats a game. Three decisions a quarter at a time.</div>
+      <div class="color" id="feedColor">Call the play, set the scheme, choose the tempo — then watch the stretch live in your memory.</div>
+    </div>
+    <div id="sheet">
+      <div class="grab"></div>
+      <div class="grpLabel"><span>Offensive play</span><span class="adj" id="adjOff"></span></div>
+      <div class="pickRow" id="rowOff"></div>
+      <div class="grpLabel"><span>Defensive scheme</span><span class="adj" id="adjDef"></span></div>
+      <div class="pickRow" id="rowDef"></div>
+      <div class="grpLabel"><span>Game tempo</span></div>
+      <div class="pickRow" id="rowTempo"></div>
+      <button class="btn primary" id="btnRun">Run it ▸</button>
+      <div id="sheetNote">Beat 1 of 12 · the stretch sims a run of possessions</div>
+    </div>
+    <div id="eventCard">
+      <div class="kicker">A decision finds you</div>
+      <div id="eventPhoto"></div>
+      <div id="eventTitle"></div>
+      <p id="eventBody"></p>
+      <div class="eventChoices" id="eventChoices"></div>
+    </div>
+  </section>
+
+  <!-- ============ QUARTER RECAP ============ -->
+  <section class="screen" id="scr-recap">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="endContent">
+      <div class="kicker" id="recapKicker">End of the first</div>
+      <h2 id="recapTitle">The film so far</h2>
+      <p class="lede" id="recapLede"></p>
+      <div class="stripWrap"><div class="strip" id="recapStrip"></div></div>
+      <div class="panelCard">
+        <div class="row"><span id="recapYouName">You</span><span class="sc" id="recapYouScore">0</span></div>
+        <div class="row"><span id="recapCpuName">Opponent</span><span class="sc" id="recapCpuScore">0</span></div>
+        <hr>
+        <div class="qline" id="recapQuarters"></div>
+      </div>
+      <div class="panelCard" id="recapLeadersCard">
+        <div class="kicker" style="margin-bottom:5px">On the film so far</div>
+        <div class="row dim"><span id="recapLeaderYou">—</span><span id="recapLeaderCpu">—</span></div>
+      </div>
+      <div class="endBtns"><button class="btn primary" id="btnNextQ">Back to the bench ▸</button></div>
+    </div>
+  </section>
+
+  <!-- ============ GAME OVER (recap) ============ -->
+  <section class="screen" id="scr-gameover">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="endContent">
+      <div class="kicker" id="goKicker">Final</div>
+      <h2 id="goTitle">Game 1 is a memory now</h2>
+      <p class="lede" id="goLede"></p>
+      <div class="stripWrap"><div class="strip" id="goStrip"></div></div>
+      <div class="panelCard">
+        <div class="row"><span id="goYouName">You</span><span class="sc" id="goYouScore">0</span></div>
+        <div class="row"><span id="goCpuName">Opponent</span><span class="sc" id="goCpuScore">0</span></div>
+        <hr>
+        <div class="row dim"><span id="goSeriesLine">Series tied 0–0</span><span id="goXpLine">+0 XP</span></div>
+        <div class="row dim"><span id="goRankLine">Legacy: Assistant</span><span id="goUnlockLine"></span></div>
+        <div class="row dim"><span id="goMvpLine">—</span><span></span></div>
+      </div>
+      <div class="endBtns">
+        <button class="btn primary" id="btnToPresser">Face the press ▸</button>
+        <button class="btn ghost" id="btnSkipPresser">Skip the press</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRESS CONFERENCE ============ -->
+  <section class="screen pageBg" id="scr-presser">
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="page">
+      <div class="kicker" id="pressKicker">Postgame · The press room</div>
+      <h2 style="font-size:26px">Microphones up.</h2>
+      <p class="pressQ" id="pressQuestion">Coach — talk to us.</p>
+      <div class="btnRow" id="pressAnswers"></div>
+      <p id="pressNote"></p>
+      <div class="btnRow" style="margin-top:auto">
+        <button class="btn primary" id="btnPresserDone" style="display:none">Back to the hub ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERIES END ============ -->
+  <section class="screen" id="scr-series">
+    <div id="seriesHero">
+      <video id="seriesHeroVid" muted playsinline loop preload="auto" style="display:none"></video>
+      <img id="seriesHeroImg" src="assets/real/arena-wide.jpg" alt="">
+      <div class="shade"></div>
+      <div id="confetti"></div>
+    </div>
+    <div class="grade"></div><div class="vignette"></div><div class="grain"></div>
+    <div class="bar top"></div><div class="bar bot"></div>
+    <div class="endContent" style="padding-top:8px">
+      <div class="kicker" id="seriesKicker">Series final</div>
+      <h2 id="seriesTitle">Your Finals, Remembered</h2>
+      <p class="lede" id="seriesLede"></p>
+      <div class="stripWrap"><div class="strip" id="seriesStrip"></div></div>
+      <div class="panelCard">
+        <div class="row"><span>Series</span><span class="sc" id="seriesScoreLine">4–2</span></div>
+        <hr>
+        <div class="row dim stack"><span id="seriesMvpLine">—</span><span id="seriesTitlesLine"></span></div>
+        <div class="row dim"><span id="seriesXpLine">Legacy +0 XP</span><span id="seriesRankLine">Rank: Assistant</span></div>
+        <div class="row dim stack"><span id="seriesUnlockLine"></span><span id="seriesCoachLine"></span></div>
+      </div>
+      <div class="endBtns">
+        <button class="btn primary" id="btnRematch">Run it back — rematch</button>
+        <button class="btn ghost" id="btnNewFinals">A new Finals, a new memory</button>
+        <button class="btn ghost" id="btnSeriesMenu">Main menu</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast"><span class="tk">Coach Legacy</span><span id="toastTxt"></span></div>
+
+  <div id="howto"><div class="card">
+    <h3>How it works</h3>
+    <p><b>The shape.</b> A best-of-seven Finals between three real championship teams — the 2008 Celtics, the 2013 Heat, the 2017 Warriors — coached through real film and real rosters. Each game is 4 quarters of 3 beats. A beat is a stretch of possessions: you coach it, the film plays it.</p>
+    <p><b>Your three calls.</b> Every beat you set an <b>offensive play</b>, a <b>defensive scheme</b>, and a <b>tempo</b>. Matchups matter: transition beats a press, a trap eats isolation, zones dare you to shoot.</p>
+    <p><b>The chess.</b> The opposing coach has a personality — and he adapts. Spam one play and he'll counter it. Vary your calls, hunt the counter to his counter, and the Legacy XP follows.</p>
+    <p><b>Real men, real numbers.</b> Every play is credited to a real player from those rosters. Their series stats live on the Roster screen. A few deep-bench men have no surviving era photo — their cards are name-plates, and the game says so.</p>
+    <p><b>Progression.</b> Earn XP, climb from Assistant to Dynasty Architect, and unlock the Hammer set and the Blitz on the way. Your legacy and your series are saved on this device.</p>
+    <button class="btn primary" id="btnHowClose" style="width:100%">Back</button>
+  </div></div>
+
+</div>
 <script>
-(async()=>{
-const P=['g00.txt','g01.txt','g02.txt','g03.txt','g04.txt'];
-const B=await Promise.all(P.map(p=>fetch(p).then(r=>{if(!r.ok)throw new Error(p);return r.arrayBuffer()})));
-const T=B.reduce((n,b)=>n+b.byteLength,0),C=new Uint8Array(T);
-let o=0;for(const b of B){C.set(new Uint8Array(b),o);o+=b.byteLength}
-document.open();document.write(new TextDecoder().decode(C));document.close();
-})().catch(e=>{document.body.innerHTML='<p style="color:#fff;font-family:sans-serif;padding:40px">Failed to load game: '+e.message+'</p>'});
+'use strict';
+/* ==================== ERA DATA ==================== */
+const ERA_DIR = 'assets/players-era/', HIST_DIR = 'assets/players-historic/', REAL = 'assets/real/';
+function PL(slug, name, pos, num, tier, arc, photo){ return { slug, name, pos, num, tier, arc, photo }; }
+const TIER_W = { star:10, starter:6, rotation:3, deep:1 };
+const TEAMS = {
+  celtics: { id:'celtics', folder:'celtics-2008', year:'2008', city:'Boston', name:'Celtics', abbr:'BOS',
+    full:'2008 Boston Celtics', color:'#007A33', color2:'#e8e4da', home:'the Garden',
+    record:'66–16 · NBA Champions', flav:'Green runs deep. So does the memory.',
+    remembered:'Sixty-six wins, Ubuntu, and a 39-point closeout in Game 6 of the Finals. The first-year Big Three didn\u2019t just win a title — they restored a franchise\u2019s memory of itself.',
+    strengths:['<b>The best defense of its year</b> — Garnett quarterbacks a wall that funnels everything into help.','<b>Three stars who all defend</b> — Pierce manufactures late-clock shots; Allen never stops moving.','<b>A bench of killers</b> — Posey, House and Cassell have each already hit the shot you\u2019re afraid of.'],
+    pers:'grinder', persLabel:'THE GRINDER', anchor:'kendrick-perkins' },
+  heat: { id:'heat', folder:'heat-2013', year:'2013', city:'Miami', name:'Heat', abbr:'MIA',
+    full:'2013 Miami Heat', color:'#98002E', color2:'#F9A01B', home:'the Bayfront',
+    record:'66–16 · NBA Champions · 27 straight wins', flav:'Culture is just memory with standards.',
+    remembered:'The 27-game win streak. The headband game. Ray Allen in the corner in Game 6 — the shot that turned a funeral into a parade. Back-to-back champions, at the apex of the Big Three.',
+    strengths:['<b>LeBron at his absolute peak</b>, with Wade slashing off him and Bosh stretching the floor to the arc.','<b>A swarming, switchable defense</b> — one mistake becomes a fast break, and the fast break becomes a poster.','<b>Shooters parked everywhere</b> — Allen, Battier, Miller, Jones — daring you to help off the engines.'],
+    pers:'grinder', persLabel:'THE GRINDER', anchor:'chris-bosh' },
+  warriors: { id:'warriors', folder:'warriors-2017', year:'2017', city:'Golden State', name:'Warriors', abbr:'GSW',
+    full:'2017 Golden State Warriors', color:'#1D428A', color2:'#FFC72C', home:'the Bay',
+    record:'67–15 · NBA Champions · 16–1 playoffs', flav:'Joy, pace, and a storm of threes.',
+    remembered:'Sixty-seven wins and a 16–1 playoff run — maybe the most inevitable team ever assembled. Durant arrived, and the geometry of the entire league changed around Curry\u2019s gravity.',
+    strengths:['<b>Curry and Thompson bend a defense past breaking</b>; Durant makes whatever counter you choose unguardable.','<b>Green runs a switch-everything defense</b> and starts the break in the same motion.','<b>Iguodala and Livingston off the bench</b> — a second starting five most nights.'],
+    pers:'blur', persLabel:'THE BLUR', anchor:'draymond-green' },
+};
+const ROSTERS = {
+  celtics: [
+    PL('kevin-garnett','Kevin Garnett','PF',5,'star',.35, ERA_DIR+'celtics-2008/kevin-garnett.jpg'),
+    PL('paul-pierce','Paul Pierce','SF',34,'star',.8, ERA_DIR+'celtics-2008/paul-pierce.jpg'),
+    PL('ray-allen','Ray Allen','SG',20,'star',1.5, ERA_DIR+'celtics-2008/ray-allen.jpg'),
+    PL('rajon-rondo','Rajon Rondo','PG',9,'starter',.3, ERA_DIR+'celtics-2008/rajon-rondo.jpg'),
+    PL('kendrick-perkins','Kendrick Perkins','C',43,'starter',0, ERA_DIR+'celtics-2008/kendrick-perkins.png'),
+    PL('james-posey','James Posey','SF',41,'rotation',1.1, ERA_DIR+'celtics-2008/james-posey.jpg'),
+    PL('eddie-house','Eddie House','SG',50,'rotation',1.4, ERA_DIR+'celtics-2008/eddie-house.jpg'),
+    PL('tony-allen','Tony Allen','SG',42,'rotation',.2, ERA_DIR+'celtics-2008/tony-allen.jpg'),
+    PL('leon-powe','Leon Powe','PF',null,'rotation',0, ERA_DIR+'celtics-2008/leon-powe.png'),
+    PL('glen-davis','Glen Davis','PF',11,'rotation',.1, ERA_DIR+'celtics-2008/glen-davis.jpg'),
+    PL('sam-cassell','Sam Cassell','PG',28,'rotation',.7, ERA_DIR+'celtics-2008/sam-cassell.jpg'),
+    PL('p-j-brown','P.J. Brown','PF',null,'rotation',.1, ERA_DIR+'celtics-2008/p-j-brown.jpg'),
+    PL('brian-scalabrine','Brian Scalabrine','PF',44,'deep',.9, ERA_DIR+'celtics-2008/brian-scalabrine.png'),
+    PL('scot-pollard','Scot Pollard','C',null,'deep',0, ERA_DIR+'celtics-2008/scot-pollard.png'),
+    PL('gabe-pruitt','Gabe Pruitt','PG',null,'deep',.6, null),
+    PL('brandon-wallace','Brandon Wallace','F',null,'deep',.3, null),
+  ],
+  warriors: [
+    PL('stephen-curry','Stephen Curry','G',30,'star',1.6, ERA_DIR+'warriors-2017/stephen-curry.jpg'),
+    PL('kevin-durant','Kevin Durant','F',35,'star',1.3, ERA_DIR+'warriors-2017/kevin-durant.jpg'),
+    PL('klay-thompson','Klay Thompson','G',11,'star',1.6, ERA_DIR+'warriors-2017/klay-thompson.jpg'),
+    PL('draymond-green','Draymond Green','F',23,'star',.7, ERA_DIR+'warriors-2017/draymond-green.jpg'),
+    PL('zaza-pachulia','Zaza Pachulia','C',27,'starter',0, ERA_DIR+'warriors-2017/zaza-pachulia.jpg'),
+    PL('andre-iguodala','Andre Iguodala','F',9,'rotation',.8, HIST_DIR+'warriors-2017/andre-iguodala.png'),
+    PL('shaun-livingston','Shaun Livingston','G',34,'rotation',.1, HIST_DIR+'warriors-2017/shaun-livingston.png'),
+    PL('david-west','David West','F',3,'rotation',.3, HIST_DIR+'warriors-2017/david-west.png'),
+    PL('javale-mcgee','JaVale McGee','C',1,'rotation',0, null),
+    PL('ian-clark','Ian Clark','G',21,'rotation',1.1, ERA_DIR+'warriors-2017/ian-clark.jpg'),
+    PL('kevon-looney','Kevon Looney','F',5,'rotation',0, ERA_DIR+'warriors-2017/kevon-looney.jpg'),
+    PL('matt-barnes','Matt Barnes','SF',22,'rotation',.9, HIST_DIR+'warriors-2017/matt-barnes.png'),
+    PL('patrick-mccaw','Patrick McCaw','SF',0,'rotation',.8, ERA_DIR+'warriors-2017/patrick-mccaw.jpg'),
+    PL('anderson-varejao','Anderson Varejao','C',18,'deep',0, HIST_DIR+'warriors-2017/anderson-varejao.png'),
+    PL('james-michael-mcadoo','James Michael McAdoo','SF',20,'deep',.2, null),
+    PL('damian-jones','Damian Jones','C',15,'deep',0, null),
+    PL('briante-weber','Briante Weber','PG',2,'deep',.5, null),
+  ],
+  heat: [
+    PL('lebron-james','LeBron James','F',6,'star',1.0, ERA_DIR+'heat-2013/lebron-james.jpg'),
+    PL('dwyane-wade','Dwyane Wade','G',3,'star',.5, ERA_DIR+'heat-2013/dwyane-wade.jpg'),
+    PL('chris-bosh','Chris Bosh','PF',1,'star',.7, ERA_DIR+'heat-2013/chris-bosh.jpg'),
+    PL('mario-chalmers','Mario Chalmers','G',15,'starter',1.2, ERA_DIR+'heat-2013/mario-chalmers.jpg'),
+    PL('udonis-haslem','Udonis Haslem','PF',40,'starter',.1, ERA_DIR+'heat-2013/udonis-haslem.png'),
+    PL('ray-allen','Ray Allen','SG',34,'starter',1.6, ERA_DIR+'heat-2013/ray-allen.png'),
+    PL('shane-battier','Shane Battier','SF',31,'rotation',1.3, ERA_DIR+'heat-2013/shane-battier.png'),
+    PL('norris-cole','Norris Cole','PG',30,'rotation',.8, ERA_DIR+'heat-2013/norris-cole.jpg'),
+    PL('chris-andersen','Chris Andersen','PF',11,'rotation',0, ERA_DIR+'heat-2013/chris-andersen.jpg'),
+    PL('mike-miller','Mike Miller','SG',13,'rotation',1.4, null),
+    PL('rashard-lewis','Rashard Lewis','PF',9,'rotation',1.2, ERA_DIR+'heat-2013/rashard-lewis.png'),
+    PL('joel-anthony','Joel Anthony','C',50,'rotation',0, ERA_DIR+'heat-2013/joel-anthony.jpg'),
+    PL('james-jones','James Jones','SG',22,'rotation',1.5, ERA_DIR+'heat-2013/james-jones.jpg'),
+    PL('juwan-howard','Juwan Howard','PF',5,'deep',.2, ERA_DIR+'heat-2013/juwan-howard.png'),
+    PL('jarvis-varnado','Jarvis Varnado','PF',24,'deep',0, ERA_DIR+'heat-2013/jarvis-varnado.jpg'),
+    PL('terrel-harris','Terrel Harris','SG',14,'deep',.9, ERA_DIR+'heat-2013/terrel-harris.jpg'),
+    PL('josh-harrellson','Josh Harrellson','C',55,'deep',.4, null),
+    PL('dexter-pittman','Dexter Pittman','C',45,'deep',0, null),
+  ],
+};
+function playerOf(teamId, slug){ return ROSTERS[teamId].find(p => p.slug === slug); }
+function lastName(p){ return p.name.split(' ').slice(-1)[0]; }
+const CLIPS = t => ({ drive: REAL+t+'-drive.mp4', defense: REAL+t+'-defense.mp4', three: t === 'warriors' ? REAL+'warriors-three.mp4' : null });
+const STILL = t => ({ drive: REAL+t+'-drive.jpg', defense: REAL+t+'-defense.jpg', three: t === 'warriors' ? REAL+'warriors-three.jpg' : null });
+/* ==================== SIM TABLES (carried from the verified build) ==================== */
+const PLAYS = [
+  { id:'pnr',   name:'Pick & Roll', d:'two-man chess',  three:.30 },
+  { id:'iso',   name:'Isolation',   d:'your best, alone', three:.26 },
+  { id:'post',  name:'Post Up',     d:'feed the block', three:.16 },
+  { id:'motion',name:'Motion',      d:'everybody eats', three:.34 },
+  { id:'horns', name:'Horns',       d:'two horns, up top', three:.28 },
+  { id:'trans', name:'Transition',  d:'run before they set', three:.38 },
+  { id:'hammer',name:'Hammer',      d:'legacy unlock', three:.36, unlock:'hammer' },
+];
+const SCHEMES = [
+  { id:'man',   name:'Man-to-Man',     d:'guard your yard' },
+  { id:'zone23',name:'2-3 Zone',       d:'wall off the paint' },
+  { id:'zone32',name:'3-2 Zone',       d:'chase the arc' },
+  { id:'press', name:'Full-Court Press', d:'94 feet of problems' },
+  { id:'trap',  name:'Half-Court Trap', d:'ambush at midcourt' },
+  { id:'blitz', name:'Blitz',          d:'legacy unlock', unlock:'blitz' },
+];
+const TEMPOS = [
+  { id:'patient', name:'Patient',  d:'milk the clock', poss:-2, qual:.02 },
+  { id:'balanced',name:'Balanced', d:'read & react',   poss:0,  qual:0 },
+  { id:'push',    name:'Push',     d:'gas pedal',      poss:2,  qual:-.01 },
+];
+const MATRIX = {
+  pnr:   { man:.05, zone23:.01, zone32:.02, press:.03, trap:-.045, blitz:-.09 },
+  iso:   { man:.02, zone23:.06, zone32:-.02, press:-.03, trap:-.055, blitz:-.06 },
+  post:  { man:.03, zone23:-.045, zone32:.06, press:.04, trap:-.02, blitz:-.03 },
+  motion:{ man:.04, zone23:-.03, zone32:-.04, press:.06, trap:.01, blitz:-.02 },
+  horns: { man:.02, zone23:.07, zone32:.01, press:-.01, trap:-.03, blitz:-.04 },
+  trans: { man:.03, zone23:-.04, zone32:-.05, press:.08, trap:.02, blitz:-.01 },
+  hammer:{ man:.06, zone23:.02, zone32:.06, press:.01, trap:-.02, blitz:-.03 },
+};
+const DMATRIX = {
+  man:   { pnr:-.03, iso:-.02, post:-.02, motion:-.03, horns:-.02, trans:-.03 },
+  zone23:{ pnr:-.02, iso:-.05, post:.07,  motion:.02,  horns:-.06, trans:.01 },
+  zone32:{ pnr:-.03, iso:.01,  post:-.05, motion:.03,  horns:-.01, trans:.02 },
+  press: { pnr:-.02, iso:.02,  post:-.03, motion:-.05, horns:0,    trans:-.07 },
+  trap:  { pnr:.07,  iso:.06,  post:.01,  motion:-.01, horns:.03,  trans:-.02 },
+  blitz: { pnr:.05,  iso:.05,  post:0,     motion:.02,  horns:.04,  trans:.01 },
+};
+const CPU_WEIGHTS = {
+  grinder: { post:3, pnr:3, iso:2, horns:2, motion:1, trans:.5 },
+  blur:    { trans:3, motion:3, pnr:2, horns:1.5, iso:1.5, post:.5 },
+};
+const RANKS = [
+  { xp:0, name:'Assistant' }, { xp:50, name:'Head Coach' }, { xp:120, name:'Finals Coach' },
+  { xp:220, name:'Champion' }, { xp:350, name:'Dynasty Architect' },
+];
+const CHAPTERS = ['Memory I — The Tip','Memory II — First Adjustments','Memory III — The Chess Match',
+  'Memory IV — No Tomorrow','Memory V — The Run','Memory VI — Heavy Legs','Memory VII — Eternity'];
+const ROMAN = ['','I','II','III','IV','V','VI','VII'];
+const IDENTITIES = [
+  { id:'tactician', name:'The Tactician', d:'Sees the counter before it comes. Prizes the read over the roar.', bonus:'Changing plays between beats sharpens the next one' },
+  { id:'motivator', name:'The Motivator', d:'Runs are fuel and timeouts are speeches. His teams play angry and together.', bonus:'Momentum swings hit harder · timeouts restore more' },
+  { id:'oldschool', name:'The Old School', d:'Feed the post. Guard the arc. Trust the whistle and the weight room.', bonus:'Post Up hits harder · opponents live inside the arc' },
+];
+const TIPS = [
+  '2008: Boston\u2019s Big Three won 66 games — and the title — in their first season together.',
+  'Game 6, 2008: the Celtics closed the Lakers out by 39. The Garden shook like the old building.',
+  '2013: Miami\u2019s 27-game win streak stands as the second-longest in NBA history.',
+  'Game 6, 2013: Ray Allen, corner, 5.2 seconds left. The most famous retreat-step in Finals history.',
+  '2017: Golden State went 16–1 in the playoffs — the finest postseason run the league has seen.',
+  'The 2017 Finals: Durant averaged 35 a night, Curry 27. Pick your poison; it was poison either way.',
+  'LeBron, 2013: MVP, Finals MVP, champion — and one vote shy of a unanimous MVP.',
+  'Pierce waited a decade in green for his ring, then took Finals MVP home in 2008.',
+  'Coaching note: spam one play and the other bench will counter it. Vary the menu.',
+  'Coaching note: momentum bends make-probability here. Protect a run; strangle theirs.',
+];
+const KEYS = {
+  grinder: ['Win the half-court chess — vary the call or he will sit on it all night.',
+            'Protect your anchor. His whole scheme leans on fouls and patience.',
+            'His pace strangles runs. Steal the momentum early and guard it.'],
+  blur:    ['Survive the storm stretches — their runs arrive in waves, not drops.',
+            'Slow the break. Transition is their oxygen; make them breathe half-court air.',
+            'Their shooters must defend too. Hunt them on the other end, possession after possession.'],
+};
+const PRESSER = {
+  win: [
+    { q:'Coach, that second half — your adjustments flipped the game. What did you see?',
+      a:[ { t:'Credit the men. They executed.', xp:3, boost:0, note:'The room nods. The players will read that — and run through a wall in the next one.' },
+          { t:'We saw their counter coming. Film doesn\u2019t lie.', xp:1, boost:4, note:'A little swagger, printed verbatim. Your locker room carries +momentum into the next game.' },
+          { t:'Ask me again after three more wins.', xp:2, boost:0, note:'Short. Cold. The headline writes itself.' } ] },
+    { q:'Your best player was immense tonight. How far can he carry this team?',
+      a:[ { t:'He\u2019s a memory-maker. We ride him.', xp:1, boost:3, note:'The star hears it. The next crowd will be louder because of it.' },
+          { t:'One man doesn\u2019t win a Finals. This roster does.', xp:4, boost:0, note:'Diplomatic — and true. The bench notices being believed in.' },
+          { t:'Farther than their gameplan, apparently.', xp:1, boost:5, note:'That one will be on their bulletin board. Yours too — as fuel.' } ] },
+  ],
+  loss: [
+    { q:'Coach — where did this one get away from you?',
+      a:[ { t:'On me. My rotations were a beat late.', xp:1, boost:4, note:'Owning it in public buys belief in private. The room steadies.' },
+          { t:'They countered everything. Tip your cap — then take it back.', xp:3, boost:0, note:'Respect for the other bench, and a promise folded inside it.' },
+          { t:'No comment on the officiating. None at all.', xp:0, boost:-3, note:'The fine will come. So will the questions. The room cools a little.' } ] },
+    { q:'What\u2019s the message to the locker room tonight?',
+      a:[ { t:'One game is a memory. Four is a legacy. We start tomorrow.', xp:1, boost:5, note:'That line will be repeated back at practice. Word for word.' },
+          { t:'Short memory. Long film session.', xp:3, boost:0, note:'No poetry. Just work. The veterans approve.' },
+          { t:'The message stays in the room.', xp:2, boost:0, note:'Door closed. The mystery becomes the story.' } ] },
+  ],
+  close: { q:'That final stretch — were you coaching, or just watching like the rest of us?',
+    a:[ { t:'Coaching is deciding. The players made it look easy.', xp:3, boost:0, note:'A craftsman\u2019s answer. The writers scribble it down.' },
+        { t:'I aged four years in four minutes.', xp:1, boost:3, note:'Laughter in the press room. Even the beat writers are human tonight.' },
+        { t:'Those minutes are why this whole thing exists.', xp:1, boost:4, note:'Quiet in the room. Some answers don\u2019t need a follow-up.' } ] },
+};
 </script>
-</body></html>
+<script>
+/* ==================== STATE, LEGACY & SAVE ==================== */
+const $ = s => document.querySelector(s);
+const FAST = new URLSearchParams(location.search).has('fast');
+let CINE_MS = FAST ? 160 : 2650;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rnd = (a,b) => a + Math.random()*(b-a);
+const ri = (a,b) => Math.floor(rnd(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+let legacy = { xp:0, unlocks:{}, titles:0, gamesWon:0, seriesPlayed:0 };
+try { const raw = localStorage.getItem('c27m_legacy'); if (raw) legacy = Object.assign(legacy, JSON.parse(raw)); } catch(e){}
+function saveLegacy(){ try { localStorage.setItem('c27m_legacy', JSON.stringify(legacy)); } catch(e){} }
+function rankOf(xp){ let r = RANKS[0], next = null; for (let i=0;i<RANKS.length;i++){ if (xp >= RANKS[i].xp) r = RANKS[i]; else { next = RANKS[i]; break; } } return { cur:r, next }; }
+function awardXP(n, why){ if (n <= 0) return; const before = rankOf(legacy.xp).cur.name; legacy.xp += n;
+  const after = rankOf(legacy.xp).cur; if (after.name !== before) toast('Rank up — ' + after.name);
+  if (why && game) game.xpLog.push({ n, why }); saveLegacy(); renderLegacyChip(); }
+
+let S = null;   // series state (persisted to c27m_save)
+let G = null;   // live game state
+let game = null; // per-game working bag
+function saveSave(){ if (!S) return; try { localStorage.setItem('c27m_save', JSON.stringify(S)); } catch(e){} }
+function cleanCoachName(n){ return String(n || '').replace(/^(\s*coach[\s.]+)+/i, '').replace(/\s+/g, ' ').trim(); }
+function loadSave(){ try { const raw = localStorage.getItem('c27m_save'); if (!raw) return null; const s = JSON.parse(raw);
+  if (!s || !TEAMS[s.user] || !TEAMS[s.opp] || s.you >= 4 || s.cpu >= 4) return null;
+  if (s.coach) s.coach.name = cleanCoachName(s.coach.name) || 'Avery'; return s; } catch(e){ return null; } }
+function clearSave(){ try { localStorage.removeItem('c27m_save'); } catch(e){} }
+const UT = () => TEAMS[S.user], OT = () => TEAMS[S.opp];
+
+function newSeries(user, opp, coach){
+  S = { user, opp, coach, you:0, cpu:0, game:1, results:[], gamesDone:0,
+        stats:{ you:{}, cpu:{} }, stills:[], playsUsed:[],
+        objDone:{ champ:false, blowout:false, variety:false }, blowout:false,
+        presserBoost:0, gameplan:{ off:'pnr', def:'man', tempo:'balanced' },
+        inbox:[], inboxRead:0 };
+  S.inbox.push({ k:'Front office', t:`<b>Coach ${coach.name}</b> — the job is simple to say and brutal to do: beat the ${OT().full} four times. The film crew is already rolling. Do not waste their stock.` });
+  S.inbox.push({ k:'The papers', t:`"${UT().full} against ${OT().full}. Three champions walk into this series in the memory; only one walks out of it." — this morning's column, already yellowing.` });
+  legacy.seriesPlayed++; saveLegacy(); saveSave();
+}
+function newGame(){
+  G = { q:1, beat:0, clock:720, you:0, cpu:0, momentum:0, qYou:0, qCpu:0,
+        quarters:[], qStills:[], gameStills:[], lastUserPlay:null, over:false, pStats:{ you:{}, cpu:{} } };
+  game = { xpLog:[], playsUsed:new Set(), schemesUsed:new Set(), eventsFired:0, timeoutUsed:false,
+           rideRisk:false, feedHot:false, feedSlug:null, spreadOff:false, anchorDecided:false,
+           anchorBenched:false, anchorRisk:false, anchorOut:false, defDrag:0, beatBusy:false,
+           cpuAdjPlay:null, hotSlug:null };
+  if (S.presserBoost){ G.momentum = clamp(S.presserBoost, -100, 100); S.presserBoost = 0; }
+}
+function inboxNote(k, t){ S.inbox.push({ k, t }); saveSave(); }
+
+/* ==================== NAV / FX ==================== */
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); window.scrollTo(0,0); }
+let toastTimer = null;
+function toast(txt){ const el = $('#toast'); $('#toastTxt').textContent = txt; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=> el.classList.remove('show'), 3400); }
+function plateHTML(p){ return `<div class="plate"><div class="num">${p.num != null ? '#'+p.num : '·'}</div><div class="nm">${p.name}</div><div class="nsf">No surviving film</div></div>`; }
+function photoHTML(p){ return p.photo ? `<img src="${p.photo}" alt="" loading="lazy">` : plateHTML(p); }
+function pcardHTML(p, statLine){
+  return `<div class="pcard"><div class="ph">${photoHTML(p)}</div><div class="pi">
+    <div class="pn2">${p.name}</div>
+    <div class="pm"><span>${p.pos}${p.num != null ? ' · #'+p.num : ''}</span>${statLine ? `<span class="st">${statLine}</span>` : ''}</div></div></div>`;
+}
+function renderLegacyChip(){
+  const r = rankOf(legacy.xp);
+  if (legacy.xp > 0 || legacy.titles > 0){
+    $('#legacyChip').style.display = 'flex';
+    $('#chipRank').textContent = r.cur.name + (legacy.titles ? ` · ${legacy.titles}× Champion` : '');
+    $('#chipXp').textContent = legacy.xp + ' XP';
+    const pct = r.next ? Math.round(100 * (legacy.xp - r.cur.xp) / (r.next.xp - r.cur.xp)) : 100;
+    $('#chipXpFill').style.width = pct + '%';
+  } else { $('#legacyChip').style.display = 'none'; }
+}
+
+/* ==================== BOOT: SPLASH → TITLE → LOADING → MENU ==================== */
+let booted = false;
+function goTitle(){ if (booted) return; booted = true; show('scr-title'); }
+setTimeout(goTitle, FAST ? 350 : 2100);
+$('#scr-splash').onclick = goTitle;
+$('#pressStart').onclick = () => startLoading();
+$('#scr-title').addEventListener('click', e => { if (e.target.id !== 'pressStart') startLoading(); });
+let loadingBusy = false;
+function preloadOne(src){
+  return new Promise(res => { const im = new Image(); let done = false;
+    const fin = () => { if (!done){ done = true; res(); } };
+    im.onload = fin; im.onerror = fin; im.src = src; setTimeout(fin, 6000); });
+}
+async function startLoading(){
+  if (loadingBusy) return; loadingBusy = true;
+  show('scr-loading');
+  const assets = [ REAL+'arena-wide.jpg', REAL+'crowd-celebration.jpg', REAL+'huddle.jpg',
+    REAL+'celtics-drive.jpg', REAL+'heat-drive.jpg', REAL+'warriors-drive.jpg',
+    REAL+'celtics-defense.jpg', REAL+'heat-defense.jpg', REAL+'warriors-defense.jpg', REAL+'warriors-three.jpg',
+    ERA_DIR+'celtics-2008/kevin-garnett.jpg', ERA_DIR+'celtics-2008/paul-pierce.jpg',
+    ERA_DIR+'heat-2013/lebron-james.jpg', ERA_DIR+'heat-2013/dwyane-wade.jpg',
+    ERA_DIR+'warriors-2017/stephen-curry.jpg', ERA_DIR+'warriors-2017/kevin-durant.jpg' ];
+  let tipIx = ri(0, TIPS.length - 1);
+  $('#loadTip').textContent = TIPS[tipIx];
+  const tipTimer = setInterval(() => { tipIx = (tipIx + 1) % TIPS.length; $('#loadTip').textContent = TIPS[tipIx]; }, FAST ? 400 : 2600);
+  const t0 = Date.now(); let done = 0;
+  for (const a of assets){ preloadOne(a).then(() => { done++;
+    const pct = Math.round(100 * done / assets.length);
+    $('#loadFill').style.width = pct + '%'; $('#loadPct').textContent = pct + '%'; }); }
+  while (done < assets.length) await sleep(120);
+  const minMs = FAST ? 300 : 1500;
+  while (Date.now() - t0 < minMs) await sleep(100);
+  clearInterval(tipTimer);
+  $('#loadTitle').textContent = 'The film is threaded.';
+  await sleep(FAST ? 60 : 350);
+  loadingBusy = false;
+  openMenu();
+}
+function openMenu(){
+  renderLegacyChip();
+  $('#btnContinue').style.display = loadSave() ? 'flex' : 'none';
+  show('scr-menu');
+}
+$('#btnHow').onclick = () => { $('#howto').style.display = 'flex'; };
+$('#btnHowClose').onclick = () => { $('#howto').style.display = 'none'; };
+$('#btnResetAll').onclick = () => {
+  legacy = { xp:0, unlocks:{}, titles:0, gamesWon:0, seriesPlayed:0 }; saveLegacy(); clearSave(); S = null;
+  renderLegacyChip(); $('#btnContinue').style.display = 'none'; toast('Everything erased. A blank reel.');
+};
+
+/* ==================== TEAM SELECT & DOSSIER ==================== */
+const flow = { mode:'create', team:null, identity:'tactician', legReturn:'menu' };
+function buildTeamList(){
+  const list = $('#teamList'); list.innerHTML = '';
+  Object.values(TEAMS).forEach(t => {
+    const card = document.createElement('div'); card.className = 'team-card'; card.dataset.team = t.id;
+    card.innerHTML = `<img src="${STILL(t.id).drive}" alt="">
+      <div class="shade"></div><div class="band" style="background:${t.color}"></div>
+      <div class="tc"><div class="yr">${t.year}</div><div class="city">${t.city}</div><div class="name">${t.name}</div>
+      <div class="flav">${t.flav}</div><div class="rec">${t.record}</div></div>
+      <div class="chev">›</div>`;
+    card.onclick = () => openDossier(t.id);
+    list.appendChild(card);
+  });
+}
+$('#btnNew').onclick = () => { flow.mode = 'create'; buildTeamList(); show('scr-teams'); };
+$('#btnMenuRosters').onclick = () => { flow.mode = 'view'; buildTeamList(); show('scr-teams'); };
+$('#btnTeamsBack').onclick = () => openMenu();
+function openDossier(teamId){
+  flow.team = teamId;
+  const t = TEAMS[teamId];
+  $('#dosHeroImg').src = STILL(teamId).drive;
+  $('#dosYr').textContent = t.year + ' · The Finals';
+  $('#dosName').textContent = `${t.city} ${t.name}`;
+  $('#dosMeta').innerHTML = `<span class="chip">Record · <b>${t.record}</b></span><span class="chip">Home · <b>${t.home}</b></span><span class="chip">Coach type · <b>${t.persLabel}</b></span>`;
+  $('#dosRemember').textContent = t.remembered;
+  $('#dosStrengths').innerHTML = t.strengths.map(s => `<li>${s}</li>`).join('');
+  $('#dosRoster').innerHTML = ROSTERS[teamId].map(p => pcardHTML(p)).join('');
+  $('#btnDosConfirm').style.display = flow.mode === 'create' ? 'flex' : 'none';
+  $('#btnDosBack').textContent = flow.mode === 'create' ? '‹ choose again' : '‹ back to the teams';
+  show('scr-dossier');
+}
+$('#btnDosBack').onclick = () => { buildTeamList(); show('scr-teams'); };
+$('#btnDosConfirm').onclick = () => { buildIdentities(); show('scr-coach'); };
+
+/* ==================== COACH CREATION ==================== */
+function buildIdentities(){
+  const list = $('#identList'); list.innerHTML = '';
+  IDENTITIES.forEach(it => {
+    const el = document.createElement('div'); el.className = 'ident' + (flow.identity === it.id ? ' sel' : ''); el.dataset.id = it.id;
+    el.innerHTML = `<div class="in2">${it.name}</div><div class="id2">${it.d}</div><div class="ib">On the floor: ${it.bonus}</div>`;
+    el.onclick = () => { flow.identity = it.id; buildIdentities(); };
+    list.appendChild(el);
+  });
+}
+$('#btnCoachBack').onclick = () => openDossier(flow.team);
+$('#btnCoachGo').onclick = () => {
+  const name = cleanCoachName($('#coachName').value || '') || 'Avery';
+  const others = Object.keys(TEAMS).filter(id => id !== flow.team);
+  newSeries(flow.team, pick(others), { name, identity: flow.identity });
+  toast(`Coach ${name} takes the ${UT().name} job`);
+  openHub();
+};
+$('#btnContinue').onclick = () => { const s = loadSave(); if (s){ S = s; openHub(); } };
+
+/* ==================== HUB ==================== */
+function seriesLeadText(){
+  if (S.you === S.cpu) return S.gamesDone === 0 ? 'The series opens' : `Series tied ${S.you}–${S.cpu}`;
+  return S.you > S.cpu ? `${UT().name} lead ${S.you}–${S.cpu}` : `${OT().name} lead ${S.cpu}–${S.you}`;
+}
+function openHub(){
+  $('#hubKicker').textContent = `The Finals · ${UT().year} ${UT().name} vs ${OT().year} ${OT().name}`;
+  $('#hubTitle').textContent = seriesLeadText();
+  const idn = IDENTITIES.find(i => i.id === S.coach.identity);
+  $('#hubCoachLine').textContent = `Coach ${S.coach.name} · ${idn ? idn.name : ''} · Game ${S.game} waits whenever you're ready. The film from the last one is already drying.`;
+  const sched = $('#hubSched'); sched.innerHTML = '';
+  for (let i = 0; i < 7; i++){
+    const r = S.results[i];
+    const d = document.createElement('div');
+    d.className = 'gslot' + (r === 'W' ? ' won' : r === 'L' ? ' lost' : (i === S.gamesDone ? ' next' : ''));
+    d.innerHTML = `<div class="gl">G${i+1}</div><div class="gs">${r || (i === S.gamesDone ? 'NEXT' : '—')}</div>`;
+    sched.appendChild(d);
+  }
+  const over = S.you >= 4 || S.cpu >= 4;
+  $('#btnHubNext').textContent = over ? 'The series is decided' : `Game ${S.game} — take the floor ▸`;
+  $('#btnHubNext').disabled = over;
+  const unread = Math.max(0, S.inbox.length - (S.inboxRead || 0));
+  $('#inboxBadge').style.display = unread ? 'flex' : 'none'; $('#inboxBadge').textContent = unread;
+  const open = Object.keys(S.objDone).filter(k => !S.objDone[k]).length;
+  $('#objBadge').style.display = open ? 'flex' : 'none'; $('#objBadge').textContent = open;
+  $('#hubFlavor').textContent = pick([
+    'The arena is empty at this hour. The echoes are not.',
+    'Somewhere, a film canister with your name on it is getting heavier.',
+    'He is in the other film room right now, watching your last game twice.']);
+  show('scr-hub');
+}
+$('#btnHubNext').onclick = () => startPregame();
+$('#tileRoster').onclick = () => openRoster();
+$('#tilePlan').onclick = () => openGameplan();
+$('#tileObj').onclick = () => openObjectives();
+$('#tileInbox').onclick = () => openInbox();
+$('#tileLegacy').onclick = () => { flow.legReturn = 'hub'; renderLegacy(); show('scr-legacy'); };
+$('#tileMenu').onclick = () => openMenu();
+$('#btnMenuLegacy').onclick = () => { flow.legReturn = 'menu'; renderLegacy(); show('scr-legacy'); };
+$('#btnLegBack').onclick = () => { if (flow.legReturn === 'hub' && S) openHub(); else openMenu(); };
+
+/* ---------- hub: roster ---------- */
+function openRoster(){
+  $('#rosKicker').textContent = `${UT().full} · your roster`;
+  $('#rosTitle').textContent = 'The men, so far';
+  const gd = Math.max(1, S.gamesDone);
+  $('#rosSub').textContent = S.gamesDone
+    ? `Series scoring through ${S.gamesDone} game${S.gamesDone > 1 ? 's' : ''}. Every point below was earned on film, in this series.`
+    : 'No film yet. Their series lines will be written one beat at a time.';
+  $('#rosGrid').innerHTML = ROSTERS[S.user].map(p => {
+    const pts = (S.stats.you[p.slug] || 0);
+    const line = S.gamesDone ? `${pts} pts · ${(pts / gd).toFixed(1)}/g` : (p.photo ? 'era film ✓' : 'name-plate');
+    return pcardHTML(p, line);
+  }).join('');
+  show('scr-roster');
+}
+$('#btnRosBack').onclick = () => openHub();
+
+/* ---------- hub: gameplan ---------- */
+const planSel = { off:'pnr', def:'man', tempo:'balanced' };
+function openGameplan(){
+  Object.assign(planSel, S.gameplan);
+  buildPlanRows();
+  $('#planNote').textContent = `He scouts tendencies. Your opener is a tell — make it a lie worth telling.`;
+  show('scr-gameplan');
+}
+function buildPlanRows(){
+  const mk = (rowId, items, group) => {
+    const row = $(rowId); row.innerHTML = '';
+    items.forEach(it => {
+      const locked = it.unlock && !legacy.unlocks[it.unlock];
+      const el = document.createElement('div');
+      el.className = 'pick' + (planSel[group] === it.id ? ' sel' : '') + (locked ? ' locked' : '');
+      el.dataset.group = group; el.dataset.id = it.id;
+      el.innerHTML = `<div class="pn">${it.name}</div><div class="pd">${locked ? 'legacy unlock' : it.d}</div>`;
+      el.onclick = () => { if (locked){ toast('Locked — earn it in the Legacy'); return; } planSel[group] = it.id; buildPlanRows(); };
+      row.appendChild(el);
+    });
+  };
+  mk('#planOff', PLAYS, 'off'); mk('#planDef', SCHEMES, 'def'); mk('#planTempo', TEMPOS, 'tempo');
+}
+$('#btnPlanBack').onclick = () => { S.gameplan = { ...planSel }; saveSave(); openHub(); };
+
+/* ---------- hub: objectives ---------- */
+const OBJECTIVES = [
+  { id:'champ', t:'Win the Finals', d:'Four wins. Take the series and the film belongs to you forever.', xp:60,
+    prog:() => `${Math.min(S.you,4)} of 4 wins`, done:() => S.you >= 4 },
+  { id:'blowout', t:'Break one open', d:'Win any single game by 15 or more. Leave one night beyond argument.', xp:25,
+    prog:() => S.blowout ? 'Done — a night beyond argument' : 'Best margin still short of 15', done:() => !!S.blowout },
+  { id:'variety', t:'Keep him guessing', d:'Call five different offensive plays across the series. A book he can\u2019t close.', xp:20,
+    prog:() => `${Math.min(S.playsUsed.length,5)} of 5 plays called`, done:() => S.playsUsed.length >= 5 },
+];
+function openObjectives(){
+  $('#objList').innerHTML = OBJECTIVES.map(o => {
+    const dn = S.objDone[o.id];
+    return `<div class="obj${dn ? ' done' : ''}"><div class="box">${dn ? '✓' : ''}</div>
+      <div><div class="ot">${o.t}</div><div class="od">${o.d}</div>
+      <div class="ox">${dn ? `Complete · +${o.xp} XP banked` : `${o.prog()} · worth ${o.xp} XP`}</div></div></div>`;
+  }).join('');
+  show('scr-objectives');
+}
+$('#btnObjBack').onclick = () => openHub();
+function checkObjectives(){
+  OBJECTIVES.forEach(o => {
+    if (!S.objDone[o.id] && o.done()){
+      S.objDone[o.id] = true; awardXP(o.xp, 'objective: ' + o.t);
+      inboxNote('Front office', `Objective complete — <b>${o.t}</b>. ${o.xp} XP, and a note in your file that reads like a poem.`);
+      toast('Objective complete — ' + o.t);
+    }
+  });
+  saveSave();
+}
+
+/* ---------- hub: inbox & legacy ---------- */
+function openInbox(){
+  $('#inboxList').innerHTML = S.inbox.slice().reverse().map(n =>
+    `<div class="note"><div class="nk">${n.k}</div><div class="nt">${n.t}</div></div>`).join('');
+  S.inboxRead = S.inbox.length; saveSave();
+  show('scr-inbox');
+}
+$('#btnInboxBack').onclick = () => openHub();
+function renderLegacy(){
+  const r = rankOf(legacy.xp);
+  const pct = r.next ? Math.round(100 * (legacy.xp - r.cur.xp) / (r.next.xp - r.cur.xp)) : 100;
+  const unlockRow = (key, name, xp) => `<div class="row dim"><span>${name}</span><span>${legacy.unlocks[key] ? 'Unlocked ✓' : `at ${xp} XP`}</span></div>`;
+  $('#legBody').innerHTML = `<div class="panelCard">
+    <div class="row"><span>Rank</span><span class="sc" style="color:var(--amber)">${r.cur.name}</span></div>
+    <div class="row dim"><span>${legacy.xp} XP total</span><span>${r.next ? `${r.next.xp - legacy.xp} XP to ${r.next.name}` : 'Top of the marquee'}</span></div>
+    <hr>
+    <div class="loadBar" style="margin:6px 0 10px"><i style="width:${pct}%"></i></div>
+    ${unlockRow('hammer','Hammer set play',30)}
+    ${unlockRow('blitz','Blitz scheme',80)}
+    <hr>
+    <div class="row dim"><span>Championships</span><span>${legacy.titles}</span></div>
+    <div class="row dim"><span>Finals games won</span><span>${legacy.gamesWon}</span></div>
+    <div class="row dim"><span>Series coached</span><span>${legacy.seriesPlayed}</span></div>
+  </div>
+  <p class="lede" style="font-size:13.5px">The legacy lives on this device. Erase it from the main menu if you ever want a blank reel.</p>`;
+}
+</script>
+<script>
+/* ==================== PREGAME LOADING → INTRO → CHAPTER ==================== */
+function starMinis(teamId){
+  return ROSTERS[teamId].filter(p => p.tier === 'star').slice(0, 3).map(p =>
+    `<div class="starMini"><div class="ph">${photoHTML(p)}</div><div class="sn">${p.name}</div></div>`).join('');
+}
+async function startPregame(){
+  show('scr-pregame');
+  $('#preKicker').textContent = `Game ${S.game} · The Finals · Series ${S.you}–${S.cpu}`;
+  $('#preTitle').textContent = `${UT().full} vs ${OT().full}`;
+  $('#preYouLabel').textContent = `Your stars — ${UT().abbr}`;
+  $('#preCpuLabel').textContent = `Their stars — ${OT().abbr}`;
+  $('#preStarsYou').innerHTML = starMinis(S.user);
+  $('#preStarsCpu').innerHTML = starMinis(S.opp);
+  $('#preKeys').innerHTML = KEYS[OT().pers].map(k => `<li>${k}</li>`).join('');
+  let tipIx = ri(0, TIPS.length - 1);
+  $('#preTip').textContent = TIPS[tipIx];
+  const tipTimer = setInterval(() => { tipIx = (tipIx + 1) % TIPS.length; $('#preTip').textContent = TIPS[tipIx]; }, FAST ? 500 : 2800);
+  const clips = [];
+  [S.user, S.opp].forEach(t => { const c = CLIPS(t); clips.push(c.drive, c.defense); if (c.three) clips.push(c.three); });
+  clips.push(REAL + 'celebration.mp4');
+  let done = 0;
+  const loadClip = src => new Promise(res => {
+    const v = document.createElement('video'); v.muted = true; v.preload = 'auto'; let fin = false;
+    const ok = () => { if (!fin){ fin = true; done++; const pct = Math.round(100 * done / clips.length);
+      $('#preFill').style.width = pct + '%'; $('#prePct').textContent = pct + '%'; res(); } };
+    v.addEventListener('loadeddata', ok); v.addEventListener('error', ok); v.src = src; setTimeout(ok, 5000);
+  });
+  const t0 = Date.now();
+  await Promise.all(clips.map(loadClip));
+  while (Date.now() - t0 < (FAST ? 1200 : 2500)) await sleep(90);
+  clearInterval(tipTimer);
+  startIntro();
+}
+/* ---------- intro: only the chosen team's film ---------- */
+let introDone = false;
+function startIntro(){
+  introDone = false;
+  show('scr-intro');
+  const t = UT();
+  $('#introTeamName').textContent = t.full;
+  const v = $('#introVideo'); const fb = $('#introFallback');
+  fb.style.display = 'none'; v.style.display = 'block';
+  v.src = `assets/video/${t.id}-intro.mp4`;
+  v.onerror = () => introFallback();
+  v.onended = () => finishIntro();
+  const p = v.play(); if (p && p.catch) p.catch(() => {});
+  setTimeout(() => { if (!introDone && v.readyState < 2 && v.networkState === 3) introFallback(); }, 4000);
+}
+function introFallback(){
+  if (introDone) return;
+  const v = $('#introVideo'); v.style.display = 'none';
+  const fb = $('#introFallback'); $('#introFallbackImg').src = STILL(UT().id).drive; fb.style.display = 'block';
+  setTimeout(finishIntro, 2600);
+}
+function finishIntro(){
+  if (introDone) return; introDone = true;
+  const v = $('#introVideo'); try { v.pause(); } catch(e){} v.removeAttribute('src'); v.load();
+  openChapter();
+}
+$('#btnSkipIntro').onclick = finishIntro;
+$('#introWrap').onclick = finishIntro;
+/* ---------- chapter card ---------- */
+function openChapter(){
+  const t = UT(), o = OT();
+  const bgs = [REAL+'huddle.jpg', REAL+'arena-wide.jpg', REAL+'crowd-celebration.jpg'];
+  $('#chapterBg').src = bgs[(S.game - 1) % bgs.length];
+  $('#chapterGame').textContent = `Game ${S.game} · The Finals · Series ${S.you}–${S.cpu}`;
+  $('#chapterTitle').textContent = CHAPTERS[Math.min(S.game - 1, CHAPTERS.length - 1)];
+  const cpuCoachLine = o.pers === 'grinder'
+    ? `Across from you: the ${o.full} and their ${o.persLabel.toLowerCase()} — half-court, patient, protects the paint.`
+    : `Across from you: the ${o.full} and their ${o.persLabel.toLowerCase()} — pressure, pace, beautiful chaos.`;
+  $('#chapterBody').textContent = S.game === 1
+    ? `Coach ${S.coach.name} takes the ${t.name} against the ${o.name}, for everything. ${cpuCoachLine} Seven games to make a memory — or four, if you're ruthless.`
+    : `The series stands ${S.you}–${S.cpu}. ${cpuCoachLine} Every adjustment he made, you remember. Every one you make, he'll have to.`;
+  $('#chapterMeta').innerHTML =
+    `<span class="chip">You · <b>${t.full}</b></span><span class="chip">Them · <b>${o.full}</b></span>` +
+    `<span class="chip">First to <b>4</b></span><span class="chip">Legacy · <b>${rankOf(legacy.xp).cur.name}</b></span>`;
+  show('scr-chapter');
+}
+$('#btnFloor').onclick = () => { newGame(); startGameScreen(); };
+</script>
+<script>
+/* ==================== GAME SCREEN ==================== */
+let picks = { off:'pnr', def:'man', tempo:'balanced' };
+let cpuScheme = 'man', cpuAdjNote = '';
+const SCHEME_COUNTER = { pnr:'trap', iso:'trap', post:'zone23', motion:'man', horns:'zone23', trans:'zone32', hammer:'zone32' };
+const usage = { off:{}, def:{} };
+
+function startGameScreen(){
+  usage.off = {}; usage.def = {}; cpuAdjNote = '';
+  const br = $('#btnRun'); if (br) br.disabled = false;
+  const sh = $('#sheet'); if (sh){ sh.style.pointerEvents = ''; sh.style.opacity = ''; }
+  cpuScheme = OT().pers === 'blur' ? 'press' : 'man';
+  picks = { ...S.gameplan };
+  if ((PLAYS.find(p => p.id === picks.off) || {}).unlock && !legacy.unlocks.hammer) picks.off = 'pnr';
+  if ((SCHEMES.find(s => s.id === picks.def) || {}).unlock && !legacy.unlocks.blitz) picks.def = 'man';
+  buildSheet(); renderHUD();
+  show('scr-game');
+  setScene({ kind:'img', src: REAL+'huddle.jpg', frame: REAL+'huddle.jpg' }, 'Pregame', 'The huddle breaks. The memory begins.');
+  setFeed(`Game ${S.game}. ${UT().full} to start — the film is rolling.`,
+          `Quarter one, beat one. Set your three calls, then run it.`);
+  updateSheetNote();
+}
+function buildSheet(){
+  const mk = (rowId, items, group) => {
+    const row = $(rowId); row.innerHTML = '';
+    items.forEach(it => {
+      const locked = it.unlock && !legacy.unlocks[it.unlock];
+      const el = document.createElement('div');
+      el.className = 'pick' + (picks[group] === it.id ? ' sel' : '') + (locked ? ' locked' : '');
+      el.dataset.group = group; el.dataset.id = it.id;
+      el.innerHTML = `<div class="pn">${it.name}</div><div class="pd">${locked ? 'legacy unlock' : it.d}</div>`;
+      el.onclick = () => { if (locked){ toast(`Locked — earn it in the Legacy (${it.unlock === 'hammer' ? '30 XP' : '80 XP'})`); return; }
+        picks[group] = it.id; buildSheet(); };
+      row.appendChild(el);
+    });
+  };
+  mk('#rowOff', PLAYS, 'off'); mk('#rowDef', SCHEMES, 'def'); mk('#rowTempo', TEMPOS, 'tempo');
+  $('#adjOff').textContent = cpuAdjNote || '';
+}
+function fmtClock(sec){ sec = Math.max(0, Math.round(sec)); return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`; }
+function qName(q){ return ['','1st','2nd','3rd','4th'][q] || 'OT'; }
+function winProb(){
+  const margin = G.you - G.cpu;
+  const beatsLeft = (4 - G.q) * 3 + (3 - G.beat) + (G.over ? 0 : 0);
+  const urgency = clamp(1.15 - beatsLeft * 0.055, 0.45, 1.3);
+  const z = (margin * 0.115 + G.momentum * 0.010) * urgency + margin * 0.012 * (12 - beatsLeft);
+  return clamp(1 / (1 + Math.exp(-z)), 0.02, 0.98);
+}
+function renderHUD(){
+  $('#bugYou').innerHTML = `${UT().abbr} <b>${G.you}</b>`;
+  $('#bugCpu').innerHTML = `${OT().abbr} <b>${G.cpu}</b>`;
+  $('#bugClock').textContent = G.over ? `OT · ${fmtClock(G.clock)}` : fmtClock(G.clock);
+  $('#bugMeta').textContent = `${G.over ? 'Overtime' : qName(G.q) + ' Quarter'} · Game ${S.game} · Series ${S.you}–${S.cpu}`;
+  const pips = $('#seriesPips'); pips.innerHTML = '';
+  for (let i = 0; i < S.you; i++){ const d = document.createElement('span'); d.className = 'pip won'; pips.appendChild(d); }
+  for (let i = 0; i < S.cpu; i++){ const d = document.createElement('span'); d.className = 'pip lost'; pips.appendChild(d); }
+  const wp = Math.round(winProb() * 100);
+  $('#wpFill').style.width = wp + '%'; $('#wpPct').textContent = wp + '% YOU';
+  $('#momNeedle').style.left = `calc(${50 + G.momentum / 2}% - 1px)`;
+}
+function updateSheetNote(){
+  const total = 12, done = (G.q - 1) * 3 + G.beat;
+  $('#sheetNote').textContent = G.over
+    ? 'Overtime — one stretch to decide it'
+    : `Beat ${done + 1} of ${total} · ${qName(G.q)} quarter · the stretch sims a run of possessions`;
+}
+/* ---------- possession sim with real-player attribution ---------- */
+function userMakeProb(playId){
+  let mx = MATRIX[playId][cpuScheme] || 0;
+  let adjPen = 0;
+  if (game.cpuAdjPlay === playId){ mx = Math.max(mx, -0.02); adjPen = 0.02; }
+  let p = 0.465 + mx + TEMPOS.find(t => t.id === picks.tempo).qual - adjPen;
+  p += G.momentum * 0.0004;
+  if (game.feedHot) p += 0.05;
+  if (game.spreadOff) p += 0.03;
+  if (S.coach.identity === 'tactician' && game.lastUserPlay && playId !== game.lastUserPlay) p += 0.015;
+  if (S.coach.identity === 'oldschool' && playId === 'post') p += 0.03;
+  return clamp(p, 0.32, 0.68);
+}
+function cpuPlayChoice(){
+  const w = CPU_WEIGHTS[OT().pers]; let tot = 0; for (const k in w) tot += w[k];
+  let r = Math.random() * tot; for (const k in w){ r -= w[k]; if (r <= 0) return k; } return 'pnr';
+}
+function cpuMakeProb(playId){
+  let p = 0.465 + (DMATRIX[picks.def][playId] || 0) + game.defDrag;
+  p -= G.momentum * 0.0004;
+  if (game.anchorOut) p += 0.03;
+  return clamp(p, 0.28, 0.68);
+}
+function PLANS3(cp){ return ({ trans:.42, motion:.36, horns:.3, pnr:.28, iso:.24, post:.14 })[cp] || .28; }
+function drawScorer(teamId, three){
+  const roster = ROSTERS[teamId]; let tot = 0;
+  const ws = roster.map(p => { let w = TIER_W[p.tier]; if (three) w *= (0.25 + p.arc); tot += w; return w; });
+  let r = Math.random() * tot;
+  for (let i = 0; i < roster.length; i++){ r -= ws[i]; if (r <= 0) return roster[i]; }
+  return roster[0];
+}
+function simStretch(){
+  const tempo = TEMPOS.find(t => t.id === picks.tempo);
+  const per = Math.max(5, 8 + tempo.poss + ri(-1, 1));
+  const R = { you:0, cpu:0, events:[], usedPlay:picks.off, cpuPlay:null, ptsYou:{}, ptsCpu:{} };
+  const addPts = (bag, p, pts) => { bag[p.slug] = (bag[p.slug] || 0) + pts; };
+  for (let i = 0; i < per; i++){
+    const three = Math.random() < PLAYS.find(p => p.id === picks.off).three;
+    if (Math.random() < userMakeProb(picks.off)){
+      const pts = three ? 3 : 2; R.you += pts;
+      const sc = drawScorer(S.user, three); addPts(R.ptsYou, sc, pts); addPts(G.pStats.you, sc, pts);
+      if (three) R.events.push({ side:'you', kind:'three', slug:sc.slug });
+      else if (Math.random() < .38) R.events.push({ side:'you', kind:'dunk', slug:sc.slug });
+      else R.events.push({ side:'you', kind:'lay', slug:sc.slug });
+    } else {
+      if (Math.random() < .16) R.events.push({ side:'you', kind:'blocked' });
+      else R.events.push({ side:'you', kind:'miss' });
+    }
+  }
+  for (let i = 0; i < per; i++){
+    const cp = cpuPlayChoice(); R.cpuPlay = cp;
+    const three = Math.random() < PLANS3(cp) * (S.coach.identity === 'oldschool' ? 0.85 : 1);
+    if (Math.random() < cpuMakeProb(cp)){
+      const pts = three ? 3 : 2; R.cpu += pts;
+      const sc = drawScorer(S.opp, three); addPts(R.ptsCpu, sc, pts); addPts(G.pStats.cpu, sc, pts);
+      if (three) R.events.push({ side:'cpu', kind:'three', slug:sc.slug });
+      else if (Math.random() < .3) R.events.push({ side:'cpu', kind:'dunk', slug:sc.slug });
+      else R.events.push({ side:'cpu', kind:'lay', slug:sc.slug });
+    } else {
+      if (Math.random() < .18) R.events.push({ side:'cpu', kind:'blocked' });
+      else R.events.push({ side:'cpu', kind:'stop' });
+    }
+  }
+  const top = (teamId, bag) => { let best = null, bp = 0;
+    for (const slug in bag) if (bag[slug] > bp){ bp = bag[slug]; best = playerOf(teamId, slug); }
+    return best ? { p:best, pts:bp } : null; };
+  R.topYou = top(S.user, R.ptsYou); R.topCpu = top(S.opp, R.ptsCpu);
+  return R;
+}
+/* ---------- CPU coach adaptation (the chess layer) ---------- */
+function cpuAdapt(){
+  usage.off[picks.off] = (usage.off[picks.off] || 0) + 1;
+  const pers = OT().pers;
+  const stubborn = pers === 'grinder' ? 0.22 : 0.08;
+  const spam = usage.off[picks.off] >= 2 && game.lastUserPlay === picks.off;
+  if (spam && Math.random() > stubborn){
+    const counter = SCHEME_COUNTER[picks.off] || 'man';
+    if (counter !== cpuScheme){
+      cpuScheme = counter; game.cpuAdjPlay = picks.off;
+      cpuAdjNote = `CPU adjusted — ${SCHEMES.find(s => s.id === counter).name} vs your ${PLAYS.find(p=>p.id===picks.off).name}`;
+      return counter;
+    }
+  }
+  if (Math.random() < .3){
+    cpuScheme = pers === 'blur' ? pick(['press','trap','man']) : pick(['man','zone23','man']);
+    if (game.cpuAdjPlay && cpuScheme !== SCHEME_COUNTER[game.cpuAdjPlay]) game.cpuAdjPlay = null;
+    cpuAdjNote = '';
+  }
+  for (const k in usage.off) if (k !== picks.off) usage.off[k] = Math.max(0, usage.off[k] - 1);
+  return null;
+}
+/* ---------- commentary (real names) ---------- */
+const COLOR_GOOD = ['That\u2019s the counter. He adjusted, you adjusted harder. This is the chess they promised.','You can feel the building lean your way.','Smart basketball. Boring to some. Beautiful to us.','Years from now, this is the stretch they\u2019ll describe.'];
+const COLOR_BAD = ['He\u2019s a step ahead right now. The next beat is a conversation you have to win.','The run is real. What a coach does next is the whole story.','Somewhere in the haze, the game is tilting. Tilt it back.'];
+const COLOR_EVEN = ['Neither bench blinks. Finals basketball, possession by possession.','A heavyweight round. Judges are sweating.'];
+const COLOR_MEM = ['You still see it when you close your eyes.','Some plays you forget by July. Not these.','The film grain on this one will never fade.'];
+function setFeed(pbp, color, big){
+  const p = $('#feedPbp'), c = $('#feedColor');
+  p.textContent = pbp || ''; p.className = 'pbp fadein' + (big ? ' big' : '');
+  c.textContent = color || ''; c.className = 'color fadein';
+}
+/* ---------- cinematics: real clips, real photos, real stills ---------- */
+let stillFlip = false, vidSrc = '';
+function setScene(sc, capK, capT, opts){
+  opts = opts || {};
+  const stage = $('#stage'), vid = $('#stageVid'), blur = $('#stageBlur');
+  const a = $('#stillA'), b = $('#stillB');
+  if (sc.kind === 'clip'){
+    stage.classList.remove('portrait'); blur.classList.remove('show');
+    a.classList.remove('show'); b.classList.remove('show');
+    if (vidSrc !== sc.src){ vidSrc = sc.src; vid.src = sc.src; }
+    vid.classList.add('show');
+    const pr = vid.play(); if (pr && pr.catch) pr.catch(() => {});
+  } else {
+    vid.classList.remove('show'); try { vid.pause(); } catch(e){}
+    const showEl = stillFlip ? a : b, hideEl = stillFlip ? b : a; stillFlip = !stillFlip;
+    if (sc.kind === 'portrait'){ stage.classList.add('portrait'); blur.style.backgroundImage = `url('${sc.src}')`; blur.classList.add('show'); }
+    else { stage.classList.remove('portrait'); blur.classList.remove('show'); }
+    showEl.src = sc.src; showEl.classList.add('show'); showEl.classList.remove('kb1','kb2');
+    void showEl.offsetWidth;
+    if (sc.kind !== 'portrait') showEl.classList.add(Math.random() < .5 ? 'kb1' : 'kb2');
+    hideEl.classList.remove('show');
+  }
+  if (capK !== undefined) $('#capK').textContent = capK;
+  if (capT !== undefined) $('#capT').textContent = capT;
+  if (opts.burn){ const bn = $('#burn'); bn.classList.remove('go'); void bn.offsetWidth; bn.classList.add('go'); }
+  stage.classList.remove('pulse'); if (opts.pulse){ void stage.offsetWidth; stage.classList.add('pulse'); }
+}
+function buildScenes(R){
+  const seq = [];
+  const diff = R.you - R.cpu;
+  const cU = CLIPS(S.user), cC = CLIPS(S.opp), sU = STILL(S.user), sC = STILL(S.opp);
+  const youDunk = R.events.find(e => e.side === 'you' && e.kind === 'dunk');
+  const youThree = R.events.find(e => e.side === 'you' && e.kind === 'three');
+  const blk = R.events.find(e => e.side === 'cpu' && e.kind === 'blocked');
+  const cpuBig = R.events.find(e => e.side === 'cpu' && (e.kind === 'dunk' || e.kind === 'three'));
+  if (youDunk) seq.push({ kind:'clip', src:cU.drive, frame:sU.drive, side:'you', ev:'dunk', pulse:true,
+    cap:['At the rim','The finish you will describe to strangers.'] });
+  else if (youThree){
+    const shooter = youThree.slug ? playerOf(S.user, youThree.slug) : (R.topYou && R.topYou.p);
+    if (cU.three) seq.push({ kind:'clip', src:cU.three, frame:sU.three, side:'you', ev:'three', pulse:true, who:shooter,
+      cap:['From deep','The arc, the silence, the roar.'] });
+    else if (shooter && shooter.photo) seq.push({ kind:'portrait', src:shooter.photo, frame:shooter.photo, side:'you', ev:'three', pulse:true, who:shooter,
+      cap:['From deep', `${lastName(shooter)} — held at the release. Some frames are the whole memory.`] });
+    else seq.push({ kind:'img', src:REAL+'crowd-celebration.jpg', frame:REAL+'crowd-celebration.jpg', side:'you', ev:'three', who:shooter,
+      cap:['From deep','The building heard it before the net did.'] });
+  }
+  if (blk && seq.length < 2) seq.push({ kind:'clip', src:cU.defense, frame:sU.defense, side:'you', ev:'block', pulse:true,
+    cap:['The stop','A possession that ends with nothing. Their nothing.'] });
+  if (diff >= 7 && seq.length < 2) seq.push({ kind:'clip', src:REAL+'celebration.mp4', frame:REAL+'crowd-celebration.jpg', side:'you', ev:'run', pulse:true,
+    cap:['The run','Momentum has a sound. This is it.'] });
+  if (cpuBig && (seq.length < 1 || diff <= -5)){
+    const sp = cpuBig.slug ? playerOf(S.opp, cpuBig.slug) : (R.topCpu && R.topCpu.p);
+    if (cpuBig.kind === 'dunk') seq.push({ kind:'clip', src:cC.drive, frame:sC.drive, side:'cpu', ev:'dunk', pulse:diff <= -7, who:sp,
+      cap:['At the rim','Their answer, delivered hard.'] });
+    else if (cC.three) seq.push({ kind:'clip', src:cC.three, frame:sC.three, side:'cpu', ev:'three', pulse:diff <= -7, who:sp,
+      cap:['From deep','Their shooter, again. It hangs over the quarter.'] });
+    else if (sp && sp.photo) seq.push({ kind:'portrait', src:sp.photo, frame:sp.photo, side:'cpu', ev:'three', who:sp,
+      cap:['From deep', `${lastName(sp)} — the face in the corner of your film, and of the floor.`] });
+  }
+  if (!seq.length){
+    if (R.you + R.cpu <= 11){ const qs = pick([REAL+'arena-wide.jpg', REAL+'crowd-celebration.jpg', REAL+'huddle.jpg']);
+      seq.push({ kind:'img', src: qs, frame: qs, side:'—', ev:'quiet', cap:['The quiet stretch','Not every memory is loud. Some are just true.'] }); }
+    else if (diff > 0) seq.push({ kind:'clip', src:cU.drive, frame:sU.drive, side:'you', ev:'lay',
+      cap:['In the lane','Not every memory is loud. Some are just true.'] });
+    else if (diff < 0) seq.push({ kind:'clip', src:cC.drive, frame:sC.drive, side:'cpu', ev:'lay',
+      cap:['In the lane','They take the stretch. The film keeps receipts.'] });
+    else seq.push({ kind:'img', src:REAL+'arena-wide.jpg', frame:REAL+'arena-wide.jpg', side:'—', ev:'even',
+      cap:['The stretch','Nothing between them. Nothing at all.'] });
+  }
+  return seq.slice(0, 2);
+}
+function feedFor(sc, R){
+  const yn = R.topYou ? lastName(R.topYou.p) : 'Your five';
+  const cn = R.topCpu ? lastName(R.topCpu.p) : 'Their best';
+  const anchor = playerOf(S.user, UT().anchor);
+  if (sc.side === 'you'){
+    if (sc.ev === 'dunk') return [`${sc.who ? lastName(sc.who) : yn} rises… and throws it DOWN! The building shakes.`, pick([...COLOR_GOOD, ...COLOR_MEM]), true];
+    if (sc.ev === 'three') return [`${sc.who ? lastName(sc.who) : yn} for three… BANG! Nothing but net!`, pick([...COLOR_GOOD, ...COLOR_MEM]), true];
+    if (sc.ev === 'block') return [`Met at the summit — ${lastName(anchor)} and the wall say NOT IN HERE.`, pick(COLOR_GOOD), true];
+    if (sc.ev === 'run') return [`It's a run — and ${yn} is authoring every line of it!`, pick(COLOR_GOOD), true];
+    if (sc.ev === 'lay') return [`${yn} keeps the film honest, bucket after quiet bucket.`, pick(COLOR_EVEN), false];
+    return ['Your stretch. The bench exhales.', pick(COLOR_EVEN), false];
+  }
+  if (sc.side === 'cpu'){
+    if (sc.ev === 'dunk') return [`${cn} throws it down at the rim. Your bench feels that one.`, pick(COLOR_BAD), true];
+    if (sc.ev === 'three') return [`${cn} from deep — again. The arc is their living room right now.`, pick(COLOR_BAD), false];
+    if (sc.ev === 'lay') return [`The ${OT().name} take this stretch through ${cn}.`, pick(COLOR_BAD), false];
+    return [`The ${OT().name} take this stretch.`, pick(COLOR_BAD), false];
+  }
+  return ['A stalemate stretch — both benches writing notes.', pick(COLOR_EVEN), false];
+}
+async function playCinematics(seq, R){
+  for (let i = 0; i < seq.length; i++){
+    const sc = seq[i];
+    setScene(sc, sc.cap[0], sc.cap[1], { pulse: sc.pulse, burn: i > 0 });
+    const [pbp, col, big] = feedFor(sc, R);
+    setFeed(pbp, col, big);
+    await sleep(CINE_MS);
+  }
+}
+/* ---------- decision events (real players, real photos) ---------- */
+function maybeEvent(R){
+  if (game.eventsFired >= 2 || (G.q === 1 && G.beat < 2)) return null;
+  // 1) opponent run → timeout or ride (their hot man is the face of it)
+  if (R.cpu - R.you >= 7 && !game.timeoutUsed && Math.random() < .8){
+    const hot = R.topCpu;
+    return { type:'run', photo: hot ? hot.p.photo : null,
+      title: hot ? `${lastName(hot.p)} is running you off the floor.` : 'They are running. The building tilts.',
+      body:`A ${R.cpu}–${R.you} stretch for the ${OT().name}${hot ? `, and ${hot.p.name} authored ${hot.pts} of it` : ''}. Your players are looking at you. The timeout is in your pocket — spend it, or trust them to answer?`,
+      choices:[ { label:'Call the timeout', sub:'kill their momentum now', apply(){ game.timeoutUsed = true;
+                    G.momentum = clamp(G.momentum + (S.coach.identity === 'motivator' ? 22 : 16), -100, 100);
+                    return 'You burn the timeout. Breathing room — the needle swings back toward you.'; } },
+                { label:'Ride it out', sub:'trust your five — risky', apply(){ game.rideRisk = true;
+                    return 'You let them play through it. Brave. The next stretch decides if it was wise.'; } } ] };
+  }
+  // 2) hot hand — a real man, with a real face
+  if (R.topYou && R.topYou.pts >= 7 && Math.random() < .75){
+    const hot = R.topYou;
+    return { type:'hot', photo: hot.p.photo, plate: hot.p,
+      title:`${hot.p.name} is cooking.`,
+      body:`${hot.pts} points in that stretch alone, and their whole defense is starting to tilt toward ${lastName(hot.p)}. Feed the flame — or use him as the decoy and spread it around?`,
+      choices:[ { label:'Feed the hot hand', sub:'ride the flame', apply(){ game.feedHot = true; game.feedSlug = hot.p.slug;
+                    return `Everything runs through ${lastName(hot.p)} now. If they trap, he has to be brilliant.`; } },
+                { label:'Spread the offense', sub:'make them guard everyone', apply(){ game.spreadOff = true; awardXP(3, 'smart counter');
+                    return 'You use the attention as gravity. The chess move — XP for the read.'; } } ] };
+  }
+  // 3) foul trouble — your anchor, by name
+  if (G.q >= 2 && !game.anchorDecided && Math.random() < .45){
+    game.anchorDecided = true;
+    const anchor = playerOf(S.user, UT().anchor);
+    return { type:'foul', photo: anchor.photo, plate: anchor,
+      title:`${anchor.name} just picked up his fourth.`,
+      body:`He is the wall your whole scheme leans on — and he is one whistle from the bench for good. Sit him and bleed inside, or trust his discipline?`,
+      choices:[ { label:'Bench him', sub:'safe, but the paint opens', apply(){ game.anchorBenched = true; game.defDrag = .03;
+                    return 'He sits. The paint gets drafty, but the series survives the night.'; } },
+                { label:'Trust him', sub:'he finishes what he starts', apply(){ game.anchorRisk = true; awardXP(2, 'nerve');
+                    return 'He stays. Every drive the rest of the way is a coin flip with the officials.'; } } ] };
+  }
+  return null;
+}
+function showEvent(ev){
+  return new Promise(resolve => {
+    const card = $('#eventCard');
+    $('#eventTitle').textContent = ev.title; $('#eventBody').textContent = ev.body;
+    const ph = $('#eventPhoto');
+    if (ev.photo){ ph.innerHTML = `<img src="${ev.photo}" alt="">`; ph.style.display = 'block'; }
+    else if (ev.plate){ ph.innerHTML = plateHTML(ev.plate); ph.style.display = 'block'; }
+    else ph.style.display = 'none';
+    const box = $('#eventChoices'); box.innerHTML = '';
+    ev.choices.forEach(ch => {
+      const b = document.createElement('button'); b.className = 'btn event-choice';
+      b.innerHTML = `${ch.label} <span style="font-size:12px;color:var(--ink-dim);font-family:var(--sans)">${ch.sub}</span>`;
+      b.onclick = () => { const msg = ch.apply(); card.style.display = 'none'; game.eventsFired++;
+        setFeed(msg, ev.type === 'run' ? 'The chess layer just moved. Watch his next adjustment.' : 'Noted in the memory. Play on.', false);
+        renderHUD(); resolve(); };
+      box.appendChild(b);
+    });
+    card.style.display = 'block';
+  });
+}
+</script>
+<script>
+/* ==================== BEAT FLOW ==================== */
+$('#btnRun').onclick = async () => {
+  if (!G || game.beatBusy) return;
+  game.beatBusy = true;
+  const btn = $('#btnRun'); btn.disabled = true;
+  $('#sheet').style.pointerEvents = 'none'; $('#sheet').style.opacity = '.55';
+
+  const adjusted = cpuAdapt();
+  if (adjusted){
+    const note = $('#cpuNote');
+    note.textContent = `CPU adjusted — ${SCHEMES.find(s => s.id === adjusted).name}`;
+    note.style.display = 'block';
+    setTimeout(() => { note.style.display = 'none'; }, FAST ? 300 : 5200);
+  }
+  const R = simStretch();
+
+  let postMsg = null;
+  if (game.rideRisk){
+    game.rideRisk = false;
+    if (R.you > R.cpu){ G.momentum = clamp(G.momentum + 8, -100, 100); awardXP(4, 'rode it out'); postMsg = 'You rode the storm and answered. That is a coach\u2019s memory.'; }
+    else { G.momentum = clamp(G.momentum - 8, -100, 100); postMsg = 'The wave you rode went over you. He files that away.'; }
+  }
+  game.feedHot = false; game.spreadOff = false;
+  if (game.anchorRisk && G.q === 4 && !game.anchorOut && Math.random() < .25){
+    game.anchorOut = true; postMsg = 'The whistle finds him. Fifth foul — your anchor is gone for the night.';
+  }
+
+  G.you += R.you; G.cpu += R.cpu; G.qYou += R.you; G.qCpu += R.cpu;
+  const momMul = S.coach.identity === 'motivator' ? 1.25 : 1;
+  G.momentum = clamp(Math.round(G.momentum * 0.65) + Math.round(((R.you - R.cpu) * 2.2 + (R.you - R.cpu >= 6 ? 3 : 0) + (R.cpu - R.you >= 6 ? -3 : 0)) * momMul), -100, 100);
+  game.playsUsed.add(picks.off); game.schemesUsed.add(picks.def);
+  if (!S.playsUsed.includes(picks.off)) S.playsUsed.push(picks.off);
+  if (R.you > R.cpu) awardXP(2, 'stretch won');
+  if (game.cpuAdjPlay && picks.off !== game.cpuAdjPlay && R.you > R.cpu){ awardXP(4, 'beat the counter'); game.cpuAdjPlay = null; cpuAdjNote = ''; postMsg = postMsg || 'He countered your bread and butter — so you changed the menu and ate anyway. Chess.'; }
+
+  const seq = buildScenes(R);
+  seq.forEach(sc => { const it = { src: sc.frame, label: `${sc.cap[0]} · Q${G.q} · G${S.game}` };
+    G.qStills.push(it); G.gameStills.push(it); S.stills.push(it); });
+  if (S.stills.length > 18) S.stills.splice(2, S.stills.length - 18);
+  /* Advance to this stretch's end time before the cinematic starts (parent audit fix). */
+  G.clock = G.over ? Math.max(0, (G.clock > 0 ? G.clock : 300) - 100) : 720 - (G.beat + 1) * 240;
+  renderHUD();
+  await playCinematics(seq, R);
+  if (postMsg) setFeed(postMsg, pick(COLOR_MEM), false);
+
+  const ev = maybeEvent(R);
+  if (ev) await showEvent(ev);
+
+  game.lastUserPlay = picks.off;
+
+  if (G.over){
+    if (G.you !== G.cpu){ game.beatBusy = false; return gameEnd(); }
+    setFeed('Still level in overtime. The memory refuses to end.', 'One more stretch. Legs are gone; nerve remains.', true);
+  } else {
+    G.beat++; G.clock = 720 - G.beat * 240;
+    if (G.beat >= 3){
+      G.quarters.push({ you: G.qYou, cpu: G.qCpu });
+      if (G.qYou > G.qCpu) awardXP(4, 'quarter won');
+      if (G.q < 4){ game.beatBusy = false; btn.disabled = false; $('#sheet').style.pointerEvents = ''; $('#sheet').style.opacity = ''; return quarterRecap(); }
+      if (G.you === G.cpu){
+        G.over = true; G.clock = 300;
+        setFeed('Level at the horn. Overtime — the Finals remember these.', 'One stretch to decide a game that refused to be decided.', true);
+      } else { game.beatBusy = false; return gameEnd(); }
+    }
+  }
+  renderHUD(); buildSheet(); updateSheetNote();
+  $('#sheet').style.pointerEvents = ''; $('#sheet').style.opacity = '';
+  btn.disabled = false; game.beatBusy = false;
+};
+
+/* ==================== QUARTER RECAP ==================== */
+function fillStrip(el, frames){
+  el.innerHTML = '';
+  const items = frames.length ? frames : [{ src: REAL+'huddle.jpg', label: 'The huddle' }];
+  items.forEach(it => {
+    const f = document.createElement('div'); f.className = 'frame';
+    f.innerHTML = `<img src="${it.src}" alt=""><div class="fl">${it.label}</div>`;
+    el.appendChild(f);
+  });
+}
+function gameLeader(teamId, bag){
+  let best = null, bp = 0;
+  for (const slug in bag) if (bag[slug] > bp){ bp = bag[slug]; best = playerOf(teamId, slug); }
+  return best ? { p: best, pts: bp } : null;
+}
+function quarterRecap(){
+  show('scr-recap');
+  $('#recapKicker').textContent = `End of the ${qName(G.q)} — Game ${S.game}`;
+  const m = G.you - G.cpu;
+  $('#recapTitle').textContent = m > 6 ? 'Your quarter, on film' : m < -6 ? 'Their quarter — for now' : 'A quarter of inches';
+  $('#recapLede').textContent = m > 0
+    ? `You lead by ${m}. The film says your calls are landing — but he is in the locker room right now, drawing the counter.`
+    : m < 0 ? `Down ${-m}. The film doesn't lie, but it doesn't finish the story either. Adjust, and the next reel is yours.`
+    : `Dead level. The film so far is two coaches circling, neither willing to be the story yet.`;
+  fillStrip($('#recapStrip'), G.qStills);
+  $('#recapYouName').textContent = `${UT().full} (you)`;
+  $('#recapCpuName').textContent = OT().full;
+  $('#recapYouScore').textContent = G.you; $('#recapCpuScore').textContent = G.cpu;
+  const ql = $('#recapQuarters'); ql.innerHTML = '';
+  G.quarters.forEach((qq, i) => { const d = document.createElement('div'); d.className = 'qbox';
+    d.innerHTML = `<div class="ql">Q${i + 1}</div><div class="qs">${qq.you}–${qq.cpu}</div>`; ql.appendChild(d); });
+  const ly = gameLeader(S.user, G.pStats.you), lc = gameLeader(S.opp, G.pStats.cpu);
+  $('#recapLeaderYou').textContent = ly ? `${UT().abbr} · ${ly.p.name} — ${ly.pts} pts` : '—';
+  $('#recapLeaderCpu').textContent = lc ? `${OT().abbr} · ${lc.p.name} — ${lc.pts} pts` : '—';
+}
+$('#btnNextQ').onclick = () => {
+  G.q++; G.beat = 0; G.clock = 720; G.qYou = 0; G.qCpu = 0; G.qStills = [];
+  show('scr-game'); renderHUD(); buildSheet(); updateSheetNote();
+  setScene({ kind:'img', src: REAL+'arena-wide.jpg', frame: REAL+'arena-wide.jpg' }, `${qName(G.q)} quarter`, 'The arena exhales, then holds its breath again.');
+  setFeed(`${qName(G.q)} quarter. ${G.you > G.cpu ? 'Protect it or extend it — your call.' : G.you < G.cpu ? 'The comeback is a coaching decision.' : 'Level. Someone blinks now.'}`,
+          'Three beats. Make them count like film stock.');
+};
+
+/* ==================== GAME END → PRESSER → HUB / SERIES END ==================== */
+let lastGame = { won:false, margin:0 };
+function checkUnlocks(){
+  const got = [];
+  if (legacy.xp >= 30 && !legacy.unlocks.hammer){ legacy.unlocks.hammer = true; got.push('Hammer set play'); }
+  if (legacy.xp >= 80 && !legacy.unlocks.blitz){ legacy.unlocks.blitz = true; got.push('Blitz scheme'); }
+  if (got.length){ saveLegacy(); setTimeout(() => toast('Legacy unlock — ' + got.join(' + ')), 600); }
+  return got;
+}
+function gameEnd(){
+  const won = G.you > G.cpu;
+  const gnum = S.game;
+  lastGame = { won, margin: G.you - G.cpu, num: gnum };
+  if (won){ S.you++; legacy.gamesWon++; awardXP(15, 'game won'); } else { S.cpu++; }
+  S.results.push(won ? 'W' : 'L'); S.gamesDone++;
+  for (const slug in G.pStats.you) S.stats.you[slug] = (S.stats.you[slug] || 0) + G.pStats.you[slug];
+  for (const slug in G.pStats.cpu) S.stats.cpu[slug] = (S.stats.cpu[slug] || 0) + G.pStats.cpu[slug];
+  if (Math.abs(lastGame.margin) >= 15) S.blowout = true;
+  if (game.playsUsed.size >= 4) awardXP(5, 'varied playbook');
+  if (game.schemesUsed.size >= 3) awardXP(3, 'varied schemes');
+  const got = checkUnlocks();
+  const mvp = gameLeader(S.user, G.pStats.you);
+  inboxNote('The papers',
+    won ? `Game ${gnum} is in the books — <b>${UT().abbr} ${G.you}, ${OT().abbr} ${G.cpu}</b>${mvp ? `, and ${mvp.p.name} owns the frame everyone will keep (${mvp.pts})` : ''}. Series ${S.you}–${S.cpu}.`
+        : `Game ${gnum} got away — <b>${OT().abbr} ${G.cpu}, ${UT().abbr} ${G.you}</b>. The columnists are sharpening their pencils. Series ${S.you}–${S.cpu}.`);
+  S.game++;
+  checkObjectives(); saveSave(); saveLegacy();
+  show('scr-gameover');
+  $('#goKicker').textContent = `Final · Game ${gnum} · ${UT().abbr} ${G.you} — ${G.cpu} ${OT().abbr}`;
+  $('#goTitle').textContent = won ? `Game ${gnum} is yours — a memory now` : `Game ${gnum} slips into their film`;
+  $('#goLede').textContent = won
+    ? `You out-coached the ${OT().pers === 'grinder' ? 'grinder' : 'blur'} tonight${mvp ? `, and ${mvp.p.name} made sure the film remembers it` : ''}. The series bends ${S.you}–${S.cpu} your way.`
+    : `He had the counters tonight. Series ${S.you}–${S.cpu}. Champions are just coaches who remember losses correctly.`;
+  fillStrip($('#goStrip'), G.gameStills);
+  $('#goYouName').textContent = `${UT().full} (you)`;
+  $('#goCpuName').textContent = OT().full;
+  $('#goYouScore').textContent = G.you; $('#goCpuScore').textContent = G.cpu;
+  const seriesOver = S.you >= 4 || S.cpu >= 4;
+  $('#goSeriesLine').textContent = seriesOver ? `Series over — ${S.you}–${S.cpu}` : `Series ${S.you}–${S.cpu} · first to 4`;
+  const xpGain = game.xpLog.reduce((a, x) => a + x.n, 0);
+  $('#goXpLine').textContent = `+${xpGain} XP this game`;
+  $('#goRankLine').textContent = `Legacy: ${rankOf(legacy.xp).cur.name} · ${legacy.xp} XP`;
+  $('#goUnlockLine').textContent = got.length ? `Unlocked: ${got.join(', ')}` : '';
+  $('#goMvpLine').textContent = mvp ? `Your frame of the night: ${mvp.p.name} — ${mvp.pts} pts` : '';
+  $('#btnToPresser').textContent = 'Face the press ▸';
+  renderLegacyChip();
+}
+/* ---------- press conference ---------- */
+let presser = null;
+function openPresser(){
+  const pool = lastGame.won ? PRESSER.win : PRESSER.loss;
+  const first = pick(pool);
+  const second = Math.abs(lastGame.margin) <= 6 ? PRESSER.close : pool.find(q => q !== first);
+  presser = { qs:[first, second], ix:0, boost:0 };
+  $('#btnPresserDone').style.display = 'none';
+  showPressQ();
+  show('scr-presser');
+}
+function showPressQ(){
+  const item = presser.qs[presser.ix];
+  $('#pressKicker').textContent = `Postgame · Game ${lastGame.num} · Question ${presser.ix + 1} of ${presser.qs.length}`;
+  $('#pressQuestion').textContent = item.q;
+  $('#pressNote').textContent = '';
+  const box = $('#pressAnswers'); box.innerHTML = '';
+  item.a.forEach(ans => {
+    const b = document.createElement('button'); b.className = 'btn ansBtn'; b.textContent = ans.t;
+    b.onclick = () => {
+      box.querySelectorAll('button').forEach(x => x.disabled = true);
+      if (ans.xp) awardXP(ans.xp, 'press conference');
+      presser.boost += ans.boost || 0;
+      $('#pressNote').textContent = ans.note;
+      setTimeout(() => {
+        presser.ix++;
+        if (presser.ix < presser.qs.length) showPressQ();
+        else {
+          if (presser.boost) { S.presserBoost = clamp(presser.boost * 2, -12, 12); saveSave(); }
+          $('#pressQuestion').textContent = 'That\u2019s all, Coach.';
+          box.innerHTML = '';
+          $('#pressNote').textContent = presser.boost > 0 ? 'You leave the room a little taller. The next game starts with the needle already leaning your way.'
+            : presser.boost < 0 ? 'You leave the room to a low murmur. The next game starts uphill.'
+            : 'You leave the room to flashbulbs and silence.';
+          const done = $('#btnPresserDone');
+          done.textContent = (S.you >= 4 || S.cpu >= 4) ? 'See how the story ends ▸' : 'Back to the hub ▸';
+          done.style.display = 'flex';
+        }
+      }, FAST ? 200 : 1400);
+    };
+    box.appendChild(b);
+  });
+}
+$('#btnToPresser').onclick = () => openPresser();
+$('#btnSkipPresser').onclick = () => afterPresser();
+$('#btnPresserDone').onclick = () => afterPresser();
+function afterPresser(){
+  if (S.you >= 4 || S.cpu >= 4) seriesEnd();
+  else openHub();
+}
+/* ---------- series end ---------- */
+function seriesEnd(){
+  const won = S.you >= 4;
+  if (won){ legacy.titles++; awardXP(40, 'championship'); }
+  checkObjectives(); checkUnlocks(); saveLegacy(); clearSave();
+  show('scr-series');
+  const vid = $('#seriesHeroVid'), img = $('#seriesHeroImg'), conf = $('#confetti');
+  if (won){
+    img.style.display = 'none'; vid.style.display = 'block';
+    if (!vid.dataset.set){ vid.src = REAL + 'celebration.mp4'; vid.dataset.set = '1'; }
+    const pr = vid.play(); if (pr && pr.catch) pr.catch(() => {});
+    conf.style.display = 'block'; conf.innerHTML = '';
+    const colors = ['#e8b34b', UT().color, UT().color2, '#f3ead9'];
+    for (let i = 0; i < 30; i++){
+      const pc = document.createElement('i');
+      pc.style.left = rnd(0, 100) + '%'; pc.style.background = pick(colors);
+      pc.style.animationDuration = rnd(2.6, 5.2) + 's'; pc.style.animationDelay = rnd(0, 2.4) + 's';
+      pc.style.transform = `rotate(${ri(0, 360)}deg)`;
+      conf.appendChild(pc);
+    }
+  } else {
+    try { vid.pause(); } catch(e){} vid.style.display = 'none';
+    img.style.display = 'block'; img.src = REAL + 'arena-wide.jpg';
+    conf.style.display = 'none';
+  }
+  $('#seriesKicker').textContent = won ? 'Champions · Series final' : 'Series final';
+  $('#seriesTitle').textContent = won ? 'Your Finals, Remembered' : 'The Memory Fades';
+  $('#seriesLede').textContent = won
+    ? `${S.you}–${S.cpu} over the ${OT().name}. No trophy photo survives in the archive — some moments are too bright for film. What survives is better: the reel, the calls, and you, deciding everything without playing a minute.`
+    : `${S.you}–${S.cpu}. The other bench gets the celebration; you get the long walk and the longer memory. It fades — unless you run it back.`;
+  fillStrip($('#seriesStrip'), S.stills);
+  $('#seriesScoreLine').textContent = `${UT().abbr} ${S.you} — ${S.cpu} ${OT().abbr}`;
+  const mvp = gameLeader(S.user, S.stats.you);
+  $('#seriesMvpLine').textContent = mvp ? `Series top scorer (you): ${mvp.p.name} — ${mvp.pts} pts` : '';
+  $('#seriesTitlesLine').textContent = legacy.titles ? `${legacy.titles}× Champion` : '';
+  $('#seriesXpLine').textContent = `Legacy · ${legacy.xp} XP total`;
+  $('#seriesRankLine').textContent = `Rank: ${rankOf(legacy.xp).cur.name}`;
+  $('#seriesUnlockLine').textContent = [legacy.unlocks.hammer && 'Hammer ✓', legacy.unlocks.blitz && 'Blitz ✓'].filter(Boolean).join(' · ') || 'Unlocks at 30 / 80 XP';
+  const idn = IDENTITIES.find(i => i.id === S.coach.identity);
+  $('#seriesCoachLine').textContent = `Coached by ${S.coach.name}${idn ? ' · ' + idn.name : ''}`;
+  renderLegacyChip();
+}
+$('#btnRematch').onclick = () => { const u = S.user, o = S.opp, c = S.coach; newSeries(u, o, c); toast('Same teams. New film.'); openHub(); };
+$('#btnNewFinals').onclick = () => { flow.mode = 'create'; buildTeamList(); show('scr-teams'); };
+$('#btnSeriesMenu').onclick = () => openMenu();
+
+/* ==================== INIT / TEST HOOKS ==================== */
+renderLegacyChip();
+window.C27M = { get S(){ return S; }, get G(){ return G; }, get legacy(){ return legacy; }, get picks(){ return picks; },
+  setFast(v){ CINE_MS = v ? 150 : 2650; }, TEAMS, ROSTERS, PLAYS, SCHEMES, PRESSER, OBJECTIVES };
+</script>
+</body>
+</html>
