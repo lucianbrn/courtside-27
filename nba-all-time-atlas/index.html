@@ -344,6 +344,27 @@ main,.footer{position:relative;z-index:1}
 .draft-top-link:hover{border-color:#d5b867;background:#171208}
 @media(max-width:760px){.draft-top-link{display:none}}
 
+
+/* Final portrait-framing fix: remove the stacked zoom rules that were clipping foreheads and faces. */
+.featureart img:not(.team-logo-fallback),
+.portrait img:not(.team-logo-fallback),
+.mini img:not(.team-logo-fallback),
+.draft-option .draft-portrait img:not(.team-logo-fallback){
+  transform:none!important;
+  transform-origin:center top!important;
+  object-position:center top!important;
+}
+.featureart img:not(.team-logo-fallback),
+.portrait img:not(.team-logo-fallback),
+.mini img:not(.team-logo-fallback),
+.draft-option .draft-portrait img:not(.team-logo-fallback){
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:cover!important;
+}
+
 </style></head><body><div class="cosmic-background" aria-hidden="true"><canvas id="cosmicCanvas"></canvas></div>
 <header class="topbar"><a class="brand" href="#home"><div class="mark"><span>A</span></div><div><b>ALL-TIME ATLAS</b><small>NBA FRANCHISE ARCHIVE · VOL. 01</small></div></a><div class="right"><div class="search"><input id="search" placeholder="Find a team or player…" aria-label="Search teams or players"></div><button class="navbtn" id="toIndex">30 FRANCHISES ↗</button></div></header><nav class="appdock" aria-label="App navigation"><button type="button" id="dockHome"><span>⌂</span>HOME</button><button type="button" id="dockTeams"><span>▦</span>TEAMS</button><button type="button" id="dockSearch"><span>⌕</span>SEARCH</button><button type="button" id="dockTop"><span>↑</span>TOP</button></nav><div class="progress"><i id="progressBar"></i></div>
 <aside class="rail"><label id="railLabel">NBA ALL-TIME ATLAS · FIELD GUIDE</label><nav><button id="prev" aria-label="Previous chapter">↑</button><button id="next" aria-label="Next chapter">↓</button></nav><b id="railCount">INDEX / 30</b></aside>
