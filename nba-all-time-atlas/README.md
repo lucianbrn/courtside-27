@@ -1,17 +1,23 @@
 # NBA All-Time Atlas
 
-An unofficial, static fan archive for NBA franchise lineups, historical player records, and a local two-player/AI draft room.
+A static, client-side NBA all-time franchise archive with a two-dice starting-five draft versus AI or a local friend.
 
-## Run locally
+## Deployment
+Set the Vercel project root directory to this folder. The application is served from `index.html`; no build step is required.
 
-Serve this directory with any static HTTP server. `index.html`, `players.json`, `sw.js`, `manifest.webmanifest`, and `icon.svg` must be served from the same root path. The history directory and draft room share the `players.json` payload; the draft start control stays disabled until that payload is ready.
+## Starting-five draft
+The Game Room has a local VS AI mode and a same-screen local-friend mode. Each of ten picks cycles animated era and franchise dice, filters the franchise roster by era and the required position, then lets the active player choose one available legend. Each die can be rerolled once per pick; rerolling one keeps the other locked. Players cannot be drafted twice, and the final lineups are compared by average Atlas Prime OVR.
 
-## Data and rating notes
+## Player bios
+Player plates show overall rating, build type, primary and secondary positions, NBA Finals record, championships, regular-season MVPs, Defensive Player of the Year awards and All-Star appearances. Award wins render as compact trophy stacks.
 
-- Historical player seasons and career/Hall of Fame fields are derived from the public [NBA Statistics 1946â€“Present dataset](https://github.com/Taleb88/NBA-Statistics-1946-Present).
-- 2025â€“26 regular-season totals and player IDs are supplemented from the public [NBA API 25â€“26 dataset](https://github.com/EasySportsApps/nba_api_25_26_data).
-- NBA CDN headshots are loaded from NBA-hosted image URLs where the player ID is available. For players whose franchise uniform cannot be verified, the UI uses a franchise-logo fallback rather than asserting a team-specific portrait.
-- Historical draft-room OVRs are estimates derived from peak per-game production, career longevity, and the available Hall of Fame flag. The Atlas's existing curated top-ten ratings are preserved as editorial values.
-- Unknown Hall of Fame status is not treated as either a confirmed yes or a confirmed no. Some older players lack a verified birth year, height, or weight in the source records.
+## Record fields and caveats
+The All-Star, championship, regular-season MVP and DPOY counts read from the archive's embedded lookup tables. Finals records are mapped for players with a curated record entry; `â€”` means the record has not been verified in the embedded source. Build types are editorial archetype descriptions for identified players and role-based labels for other players; they are not official NBA 2K ratings.
 
-This is a fan project an¶»§q«^
+## External trophy art
+- Larry O'Brien trophy PNG: VHV image URL.
+- MVP trophy PNG: PNGKey image URL.
+- DPOY trophy photo: Hearst/Click2Houston CDN image URL.
+External providers control availability and usage terms for those assets.
+
+This application lives in its own subfolder so the existing Courtside 27 files remain unchanged.
