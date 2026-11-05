@@ -1,1 +1,14 @@
-{"$schema":"https://openapi.vercel.sh/vercel.json","cleanUrls":false,"rewrites":[{"destination":"/:f","source":"/assets/video/:f"},{"destination":"/three.module.js","source":"/vendor/three.module.js"},{"destination":"/:f","source":"/video/:f"}],"trailingSlash":false}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/assets/:path*", "destination": "/", "permanent": false },
+    { "source": "/video/:path*", "destination": "/", "permanent": false },
+    { "source": "/nba-all-time-atlas/:path*", "destination": "/", "permanent": false },
+    { "source": "/celtics-intro.mp4", "destination": "/", "permanent": false },
+    { "source": "/heat-intro.mp4", "destination": "/", "permanent": false },
+    { "source": "/warriors-intro.mp4", "destination": "/", "permanent": false },
+    { "source": "/three.module.js", "destination": "/", "permanent": false }
+  ]
+}
